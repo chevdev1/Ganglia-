@@ -27,6 +27,7 @@ header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px s
 nav{display:flex;gap:22px;margin-left:auto}
 nav a{text-decoration:none;color:var(--dim);font-size:14px}
 nav a:hover{color:var(--fg)}
+nav a.active{color:var(--fg)}
 .btn{font-family:var(--px);font-size:14px;border:0;padding:12px 18px;background:var(--fg);color:var(--bg);box-shadow:4px 4px 0 var(--acc);transition:transform .08s, box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--acc)}
 .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acc)}
@@ -116,12 +117,49 @@ footer{border-top:1px solid var(--line);padding:40px 0 56px;color:var(--dim);fon
 footer .wrap{display:grid;grid-template-columns:1fr 1fr;gap:32px}
 footer p{margin:0;max-width:60ch}
 
+/* docs page */
+.docshero{padding:56px 0 40px}
+.docshero h1{font-size:clamp(36px,6vw,56px)}
+.docs{display:grid;grid-template-columns:200px 1fr;gap:56px;align-items:start;padding-top:0}
+.toc{position:sticky;top:88px;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.toc-h{font-family:var(--px);font-size:12px;color:var(--dim);margin:0 0 10px}
+.toc a{text-decoration:none;color:var(--dim);padding:6px 0;border-left:2px solid transparent;padding-left:12px}
+.toc a:hover{color:var(--fg)}
+.toc a.active{color:var(--fg);border-left-color:var(--acc)}
+.doc-section{scroll-margin-top:88px}
+.doc-section+.doc-section{border-top:1px solid var(--line);margin-top:48px;padding-top:48px}
+.doc-section p{color:var(--dim);max-width:66ch}
+.doc-section p+p{margin-top:14px}
+.glossary{display:grid;gap:18px;margin-top:8px}
+.glossary div{border-left:2px solid var(--acc);padding-left:14px}
+.glossary dt{font-family:var(--px);font-size:15px;margin:0 0 4px}
+.glossary dd{margin:0;color:var(--dim);font-size:14px;max-width:60ch}
+.steps-doc{display:grid;gap:0;border:1px solid var(--line);margin-top:8px}
+.steps-doc li{list-style:none;display:flex;gap:18px;padding:20px 22px;border-top:1px solid var(--line)}
+.steps-doc li:first-child{border-top:0}
+.steps-doc .n{font-family:var(--px);font-size:22px;color:var(--acc);flex:none;width:28px}
+.steps-doc h3{font-family:var(--px);font-weight:400;font-size:15px;margin:0 0 6px}
+.steps-doc p{margin:0;color:var(--dim);font-size:14px}
+.faq{margin-top:8px}
+.faq details{border:1px solid var(--line);padding:16px 18px;margin-bottom:10px}
+.faq summary{cursor:pointer;font-family:var(--px);font-size:15px;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::before{content:"+ ";color:var(--acc)}
+.faq details[open] summary::before{content:"\2013 "}
+.faq p{margin:12px 0 0;color:var(--dim);font-size:14px;max-width:66ch}
+.notebox{border:1px dashed var(--line);padding:16px 18px;font-size:13px;color:var(--dim);margin-top:8px}
+.notebox b{color:var(--fg)}
+
 @media (max-width:900px){
   nav{display:none}
   .hero,.nodes,.two,footer .wrap{grid-template-columns:1fr}
   .ritual{grid-template-columns:1fr}
   .step{border-right:0;border-bottom:1px solid var(--line)} .step:last-child{border-bottom:0}
   .panel{position:static}
+  .docs{grid-template-columns:1fr}
+  .toc{position:static;flex-direction:row;flex-wrap:wrap;gap:4px 16px}
+  .toc a{padding-left:0;border-left:0;border-bottom:2px solid transparent}
+  .toc a.active{border-left:0;border-bottom-color:var(--acc)}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
