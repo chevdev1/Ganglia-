@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Docs — Ganglia</title>
 <meta name="description" content="Plain-language documentation for Ganglia: what it is, the terms it uses, how to try it, and what's real vs. simulated.">
+<meta property="og:title" content="Docs — Ganglia">
+<meta property="og:description" content="What Ganglia is, the terms it uses, and how to try it.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://ganglia-navy.vercel.app/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ganglia-navy.vercel.app/assets/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
@@ -140,11 +146,14 @@
 </footer>
 
 <script src="js/core.js"></script>
+<script src="js/motion.js"></script>
 <script>
 drawLogo();
 document.getElementById('theme').onclick=()=>{
-  const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  r.dataset.theme = dark?'light':'dark'; drawLogo();
+  themeWipe(()=>{
+    const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark?'light':'dark'; drawLogo();
+  });
 };
 const toc=[...document.querySelectorAll('.toc a')];
 const secs=toc.map(a=>document.querySelector(a.getAttribute('href')));

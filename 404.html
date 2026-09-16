@@ -47,11 +47,14 @@
 </footer>
 
 <script src="js/core.js"></script>
+<script src="js/motion.js"></script>
 <script>
 drawLogo();
 document.getElementById('theme').onclick=()=>{
-  const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  r.dataset.theme = dark?'light':'dark'; drawLogo();
+  themeWipe(()=>{
+    const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark?'light':'dark'; drawLogo();
+  });
 };
 /* a small static 16x8 node grid, mostly dark; one "probe" cell searches, blinking, never landing */
 (function(){

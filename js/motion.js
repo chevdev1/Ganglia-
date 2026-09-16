@@ -176,6 +176,35 @@ function magnetic(el, {max=6}={}){
   });
 }
 
+/* themeWipe: covers the viewport with a Bayer-ordered mask, swaps theme underneath, peels away */
+function themeWipe(applyTheme, {duration=400}={}){
+  if (reduce){ applyTheme(); return; }
+  const N=8;
+  const overlay=document.createElement('div');
+  overlay.style.cssText=`position:fixed;inset:0;z-index:80;display:grid;grid-template-columns:repeat(${N},1fr);grid-template-rows:repeat(${N},1fr);pointer-events:none`;
+  const cells=[];
+  for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+    const d=document.createElement('div');
+    d.style.gridColumn=String(x+1); d.style.gridRow=String(y+1);
+    d.style.background=css('--bg');
+    overlay.appendChild(d);
+    cells.push({el:d, v:BAYER8[y][x]});
+  }
+  document.body.appendChild(overlay);
+  applyTheme();
+  const newBg=css('--bg');
+  cells.forEach(c=>{ c.el.style.background=newBg; });
+  cells.sort((a,b)=>a.v-b.v);
+  const steps=16, per=Math.ceil(cells.length/steps), stepDur=duration/steps;
+  let step=0;
+  const iv=setInterval(()=>{
+    step++;
+    const upto=Math.min(step*per, cells.length);
+    for(let i=0;i<upto;i++) cells[i].el.style.visibility='hidden';
+    if(step>=steps){ clearInterval(iv); overlay.remove(); }
+  }, stepDur);
+}
+
 /* onEnterView: fire `cb` once when `el` crosses `threshold` visibility, scrolling down only */
 function onEnterView(el, cb, {threshold=0.22}={}){
   let done=false;

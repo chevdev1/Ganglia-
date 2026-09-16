@@ -4,6 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Ganglia — one mind, 128 nodes</title>
+<meta name="description" content="Ganglia is a single shared digital character. 128 people hold its nodes. Claim one, send a scenario, watch the mind respond.">
+<meta property="og:title" content="Ganglia — one mind, 128 nodes">
+<meta property="og:description" content="A single shared digital character. 128 people hold its nodes. Claim one, send a scenario, watch the mind respond.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://ganglia-navy.vercel.app/">
+<meta property="og:image" content="https://ganglia-navy.vercel.app/assets/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ganglia — one mind, 128 nodes">
+<meta name="twitter:description" content="A single shared digital character. 128 people hold its nodes.">
+<meta name="twitter:image" content="https://ganglia-navy.vercel.app/assets/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
@@ -16,6 +26,7 @@
     <nav aria-label="Main">
       <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/docs.html">Docs</a>
     </nav>
+    <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="false" title="Sound (off by default)">♪</button>
     <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
     <div class="auth" id="auth">
       <button class="btn ghost" id="leave" hidden type="button">Leave</button>
@@ -300,6 +311,38 @@ if (!reduce) {
     }
   });
 })();
+
+/* pixel cursor over the brain and the node grid, desktop only */
+(function(){
+  if (matchMedia('(hover: none)').matches) return;
+  const cur=document.createElement('div');
+  cur.className='pxcursor';
+  document.body.appendChild(cur);
+  const zones=[document.querySelector('.mind canvas'), document.querySelector('.grid')].filter(Boolean);
+  let active=false;
+  const show=()=>{ if(!active){ active=true; cur.style.display='block'; document.body.classList.add('pxcursor-on'); } };
+  const hide=()=>{ if(active){ active=false; cur.style.display='none'; document.body.classList.remove('pxcursor-on'); } };
+  zones.forEach(z=>{ z.addEventListener('mouseenter', show); z.addEventListener('mouseleave', hide); });
+  addEventListener('mousemove', e=>{
+    if(!active) return;
+    cur.style.left=e.clientX+'px';
+    cur.style.top=e.clientY+'px';
+  });
+})();
+
+/* idle mode: after 60s of no input, the brain dreams on its own until the user moves again */
+if (!reduce) {
+  let idleTimer=null, idleInterval=null;
+  function resetIdle(){
+    if (idleInterval){ clearInterval(idleInterval); idleInterval=null; }
+    clearTimeout(idleTimer);
+    idleTimer=setTimeout(()=>{
+      idleInterval=setInterval(()=>{ if (window.brain) brain.ripple(); }, 4500);
+    }, 60000);
+  }
+  ['mousemove','keydown','touchstart','wheel'].forEach(ev=>addEventListener(ev, resetIdle, {passive:true}));
+  resetIdle();
+}
 
 console.log('%c128 nodes. one mind.', 'font-family:monospace;font-size:14px;color:#4D7CFF');
 console.log('read the docs: /docs.html');

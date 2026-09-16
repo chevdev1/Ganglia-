@@ -89,7 +89,7 @@ function renderGrid(){
     b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'');
     b.setAttribute('aria-label',`Node ${i}, ${i===mine?'yours':o?'claimed':'free'}`);
     b.dataset.i=i; b.onclick=()=>{selected=i;renderGrid();renderPanel();brain.target(i);};
-    b.onmouseenter=()=>brain.target(i);
+    b.onmouseenter=()=>{ brain.target(i); blip(1400,0.02,0.03); };
     grid.appendChild(b);
   });
   const taken=owners.filter(Boolean).length;
@@ -341,6 +341,7 @@ async function claimNode(){
     await api('/api/nodes/'+i+'/claim',{method:'POST', body:'{}'});
     mine=i; unlock();
     renderClaimProgress(2);
+    blip(500,0.1,0.07); setTimeout(()=>blip(900,0.08,0.06),90);
     await loadState(true);
     burst();
     brain.target(i,true);
@@ -365,6 +366,7 @@ send.onclick=async()=>{
   document.getElementById('status').textContent='reading your scenario';
   try{
     await api('/api/scenarios',{method:'POST', body:JSON.stringify({text:v})});
+    blip(700,0.05,0.05);
     burst();
   }catch(err){
     showErr(err.message);
@@ -383,9 +385,35 @@ bindAccountWatch(()=>address, ()=>{
 });
 
 document.getElementById('theme').onclick=()=>{
-  const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-  r.dataset.theme = dark?'light':'dark'; drawLogo(); renderStates(); brain.colors();
+  themeWipe(()=>{
+    const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    r.dataset.theme = dark?'light':'dark'; drawLogo(); renderStates(); brain.colors();
+  });
 };
+
+/* sound: off by default, WebAudio blips on interaction, ~short */
+let audioCtx=null, soundOn=localStorage.getItem('ganglia_sound')==='1';
+function updateSoundBtn(){ const b=document.getElementById('sound'); if(b) b.setAttribute('aria-pressed', String(soundOn)); }
+function blip(freq=880, dur=0.05, vol=0.05){
+  if(!soundOn) return;
+  try{
+    audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+    o.type='square'; o.frequency.value=freq; g.gain.value=vol;
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+dur);
+    o.stop(audioCtx.currentTime+dur);
+  }catch(_e){}
+}
+const soundBtn=document.getElementById('sound');
+if(soundBtn) soundBtn.onclick=()=>{
+  soundOn=!soundOn;
+  localStorage.setItem('ganglia_sound', soundOn?'1':'0');
+  updateSoundBtn();
+  if(soundOn) blip(880,0.06,0.06);
+};
+updateSoundBtn();
 
 function seededRandom(seed){
   let s=(seed%2147483647)||1; if(s<=0) s+=2147483646;
