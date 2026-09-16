@@ -23,6 +23,7 @@
       <button class="btn" id="connect" type="button">Enter browser</button>
     </div>
   </div>
+  <div class="readprog" aria-hidden="true"><i id="readprogbar"></i></div>
 </header>
 <p class="flash" id="flash" hidden></p>
 
@@ -34,9 +35,12 @@
       <h1>One mind.<br>128 nodes.</h1>
       <p class="lede">Ganglia is a single shared character in one public room. <b>128 people hold its nodes.</b> Each node can send it a scenario. Every scenario stays on the table, and the next thought has to carry it.</p>
       <div class="cta">
-        <a class="btn" href="#nodes" style="text-decoration:none">Claim a node</a>
+        <a class="btn" href="#nodes" style="text-decoration:none" id="ctaClaim">Claim a node</a>
         <a class="btn ghost" href="/me.html" style="text-decoration:none">Open cabinet</a>
       </div>
+      <p class="livebar" id="livebar">
+        <span id="lb-claimed">0/128 claimed</span><i class="dot"></i><span id="lb-scn">0 scenarios</span><i class="dot"></i><span id="lb-last">no thoughts yet</span>
+      </p>
     </div>
     <div class="mind">
       <canvas id="mindcv" tabindex="0" aria-label="Rotatable pixel brain with 128 nodes. Drag or use arrow keys to rotate, click a node to send the probe."></canvas>
@@ -140,7 +144,46 @@ if (!reduce) {
   if (ritual) onEnterView(ritual, ()=>{
     ritual.querySelectorAll('.step').forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
   });
+
+  const ctaClaim = document.getElementById('ctaClaim');
+  if (ctaClaim) magnetic(ctaClaim, {max:5});
 }
+
+/* header: hide on scroll down, show on scroll up, reading-progress bar */
+(function(){
+  const header = document.querySelector('header');
+  const bar = document.getElementById('readprogbar');
+  let lastY = window.scrollY, ticking = false;
+  function update(){
+    const y = window.scrollY;
+    const doc = document.documentElement;
+    const max = doc.scrollHeight - doc.clientHeight;
+    if (bar) bar.style.width = max>0 ? Math.min(100, (y/max)*100)+'%' : '0%';
+    if (header){
+      if (y > lastY && y > 120) header.classList.add('hide');
+      else header.classList.remove('hide');
+    }
+    lastY = y; ticking = false;
+  }
+  addEventListener('scroll', ()=>{ if(!ticking){ requestAnimationFrame(update); ticking=true; } }, {passive:true});
+  update();
+})();
+
+/* active nav link tracks the section currently in view */
+(function(){
+  const links = [...document.querySelectorAll('nav a[href^="#"]')];
+  if (!links.length) return;
+  const targets = links.map(a=>document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  if (!targets.length) return;
+  const io = new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      const link = links[targets.indexOf(entry.target)];
+      if (!link) return;
+      if (entry.isIntersecting) links.forEach(l=>l.classList.toggle('active', l===link));
+    });
+  }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
+  targets.forEach(t=>io.observe(t));
+})();
 </script>
 </body>
 </html>

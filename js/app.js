@@ -108,6 +108,33 @@ function renderPanel(){
   const c=document.getElementById('claim'); if(c) c.onclick=()=>{ claimNode(); };
 }
 
+let liveBarInited=false, lastThoughtAt=null;
+function relTime(iso){
+  if(!iso) return 'no thoughts yet';
+  const s=Math.max(0, Math.floor((Date.now()-new Date(iso).getTime())/1000));
+  if(s<60) return 'just now';
+  const m=Math.floor(s/60); if(m<60) return `${m}m ago`;
+  const h=Math.floor(m/60); if(h<24) return `${h}h ago`;
+  return `${Math.floor(h/24)}d ago`;
+}
+function renderLiveBar(){
+  const claimedEl=document.getElementById('lb-claimed'), scnEl=document.getElementById('lb-scn'), lastEl=document.getElementById('lb-last');
+  if(!claimedEl) return;
+  const claimed=owners.filter(Boolean).length;
+  const totalScn=scenarioCounts.reduce((a,b)=>a+b,0);
+  if(!liveBarInited){
+    liveBarInited=true;
+    claimedEl.textContent='0'; scnEl.textContent='0';
+    countUp(claimedEl, claimed, {format:n=>`${n}/128 claimed`});
+    countUp(scnEl, totalScn, {format:n=>`${n} scenario${n===1?'':'s'}`});
+  }else{
+    claimedEl.textContent=`${claimed}/128 claimed`;
+    scnEl.textContent=`${totalScn} scenario${totalScn===1?'':'s'}`;
+  }
+  if(lastEl) lastEl.textContent=relTime(lastThoughtAt);
+}
+setInterval(()=>{ const lastEl=document.getElementById('lb-last'); if(lastEl&&lastThoughtAt) lastEl.textContent=relTime(lastThoughtAt); }, 15000);
+
 function applyMeters(s){
   if(!s) return;
   state.curiosity=s.curiosity; state.intensity=s.intensity; state.warmth=s.warmth;
@@ -130,6 +157,11 @@ function applyWorld(data){
     }else warn.hidden=true;
   }
   data.nodes.forEach(n=>{ owners[n.id]=n.owner; scenarioCounts[n.id]=n.scenarios; window.nodeAliases=window.nodeAliases||{}; window.nodeAliases[n.id]=n.alias||null; });
+  if(data.thoughts&&data.thoughts.length){
+    const latest=data.thoughts.reduce((a,b)=> (!a||(b.created_at&&b.created_at>a))?b.created_at:a, null);
+    if(latest) lastThoughtAt=latest;
+  }
+  renderLiveBar();
   if(data.me){
     connected=true; address=data.me.address; mine=data.me.node_id; window.myAlias=data.me.alias||'';
     if(data.me.token){ token=data.me.token; localStorage.setItem('ganglia_token',token); localStorage.setItem('ganglia_address',address); }

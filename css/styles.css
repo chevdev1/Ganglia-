@@ -31,7 +31,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ground{background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:16px 16px}
 
 /* header */
-header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);transition:transform var(--d-2) var(--ease-out)}
+header.hide{transform:translateY(-100%)}
+.readprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
+.readprog i{display:block;height:100%;width:0%;background:var(--acc);transition:width .1s linear}
 .bar{display:flex;align-items:center;gap:28px;height:64px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
 .brand svg{width:26px;height:26px;image-rendering:pixelated}
@@ -60,6 +63,8 @@ nav a.active{color:var(--fg)}
 h1{font-family:var(--px);font-weight:400;font-size:clamp(44px,7vw,88px);line-height:.95;margin:0 0 24px;letter-spacing:-.01em}
 .lede{max-width:46ch;color:var(--dim);margin:0 0 32px;font-size:16px}
 .lede b{color:var(--fg);font-weight:500}
+.livebar{display:flex;align-items:center;gap:10px;margin:22px 0 0;font-size:12px;color:var(--dim);font-family:var(--mono)}
+.livebar .dot{width:4px;height:4px;background:var(--dim);flex:none}
 .wallet-sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px}
 .wallet-sheet[hidden]{display:none!important}
 .wallet-sheet-card{position:relative;background:var(--bg);border:1px solid var(--fg);box-shadow:8px 8px 0 var(--acc);padding:28px 24px 22px;width:min(440px,100%)}
