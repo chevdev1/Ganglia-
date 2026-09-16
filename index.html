@@ -100,6 +100,12 @@
       <div>
         <h2>Thoughts</h2>
         <p class="sub">Every response and every autonomous thought, newest first.</p>
+        <div class="feedfilters" id="feedfilters">
+          <button type="button" class="chip active" data-filter="all">All</button>
+          <button type="button" class="chip" data-filter="scenario">Scenarios</button>
+          <button type="button" class="chip" data-filter="autonomous">Autonomous</button>
+          <button type="button" class="chip" data-filter="mine">My node</button>
+        </div>
         <div class="feed" id="feed"></div>
       </div>
     </div>
@@ -119,6 +125,19 @@
     </div>
   </section>
 </main>
+
+<div class="sheet" id="sharesheet" hidden>
+  <div class="sheet-card" role="dialog" aria-labelledby="sharetitle">
+    <button type="button" class="wallet-x" id="sharex" aria-label="Close">×</button>
+    <p class="kicker">node claimed</p>
+    <h2 id="sharetitle" class="wallet-h">share your <span>node</span></h2>
+    <canvas id="sharecanvas" width="1200" height="630" style="width:100%;height:auto;border:1px solid var(--line);image-rendering:pixelated;margin:14px 0"></canvas>
+    <div class="row">
+      <button type="button" class="btn ghost" id="sharedownload">Download</button>
+      <a class="btn acc" id="sharepost" href="#" target="_blank" rel="noopener" style="text-decoration:none">Post on X</a>
+    </div>
+  </div>
+</div>
 
 <footer>
   <div class="wrap">
@@ -209,6 +228,81 @@ if (!reduce) {
   }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
   targets.forEach(t=>io.observe(t));
 })();
+
+/* animated favicon: a node blinks on the pixel mark */
+(function(){
+  const link=document.createElement('link');
+  link.rel='icon'; link.type='image/png';
+  document.head.appendChild(link);
+  const cv=document.createElement('canvas'); cv.width=16; cv.height=16;
+  const ctx=cv.getContext('2d');
+  let on=true;
+  function draw(){
+    ctx.clearRect(0,0,16,16);
+    ctx.fillStyle='#0A0A0A'; ctx.fillRect(0,0,16,16);
+    ctx.fillStyle=on?'#4D7CFF':'#7A7A7A';
+    [[6,4],[9,4],[7,6],[6,9],[9,9],[7,7]].forEach(([x,y])=>ctx.fillRect(x,y,2,2));
+    link.href=cv.toDataURL('image/png');
+  }
+  draw();
+  if (!reduce) setInterval(()=>{ on=!on; draw(); }, 900);
+})();
+
+/* tab title changes while the page is hidden */
+(function(){
+  const orig=document.title;
+  document.addEventListener('visibilitychange', ()=>{
+    document.title = document.hidden ? 'the mind is waiting…' : orig;
+  });
+})();
+
+/* keyboard shortcuts: ? cheatsheet, / focus composer, t toggle theme, "128" wakes every node */
+(function(){
+  function buildCheatsheet(){
+    let sheet=document.getElementById('cheatsheet');
+    if (sheet) return sheet;
+    sheet=document.createElement('div');
+    sheet.className='sheet'; sheet.id='cheatsheet'; sheet.hidden=true;
+    sheet.innerHTML=`<div class="sheet-card" role="dialog" aria-label="Keyboard shortcuts">
+      <button type="button" class="wallet-x" id="cheatx" aria-label="Close">×</button>
+      <p class="kicker">shortcuts</p>
+      <h2 class="wallet-h">keyboard <span>map</span></h2>
+      <dl class="glossary" style="margin-top:14px">
+        <div><dt>?</dt><dd>Toggle this cheatsheet</dd></div>
+        <div><dt>/</dt><dd>Focus the scenario composer</dd></div>
+        <div><dt>t</dt><dd>Toggle light / dark theme</dd></div>
+      </dl>
+    </div>`;
+    document.body.appendChild(sheet);
+    const close=()=>{ sheet.hidden=true; };
+    sheet.addEventListener('click', e=>{ if (e.target===sheet) close(); });
+    document.getElementById('cheatx').onclick=close;
+    return sheet;
+  }
+  let numBuf='';
+  document.addEventListener('keydown', e=>{
+    const tag=(e.target.tagName||'').toLowerCase();
+    const typing = tag==='input'||tag==='textarea';
+    if (!typing && e.key==='?'){
+      e.preventDefault();
+      const sheet=buildCheatsheet();
+      sheet.hidden=!sheet.hidden;
+    } else if (!typing && e.key==='/'){
+      e.preventDefault();
+      const scnEl=document.getElementById('scn');
+      if (scnEl && !scnEl.disabled) scnEl.focus();
+    } else if (!typing && (e.key==='t'||e.key==='T')){
+      document.getElementById('theme')?.click();
+    }
+    if (!typing && /^[0-9]$/.test(e.key)){
+      numBuf=(numBuf+e.key).slice(-3);
+      if (numBuf==='128' && window.brain){ brain.ripple(); setTimeout(()=>brain.ripple(),150); }
+    }
+  });
+})();
+
+console.log('%c128 nodes. one mind.', 'font-family:monospace;font-size:14px;color:#4D7CFF');
+console.log('read the docs: /docs.html');
 </script>
 </body>
 </html>

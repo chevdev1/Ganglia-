@@ -130,6 +130,15 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .panel dt{color:var(--dim)} .panel dd{margin:0;text-align:right;overflow:hidden;text-overflow:ellipsis}
 .panel .note{font-size:12px;color:var(--dim);margin:14px 0 0}
 .panel .btn{width:100%}
+.claimstep{display:flex;gap:4px;margin:18px 0 0}
+.claimstep b{flex:1;height:6px;background:var(--cell)}
+.claimstep b.on{background:var(--acc);animation:pulse 1s steps(3) infinite}
+.claimstep b.done{background:var(--fg)}
+
+/* generic modal sheet, shared visual language with .wallet-sheet */
+.sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px}
+.sheet[hidden]{display:none!important}
+.sheet-card{position:relative;background:var(--bg);border:1px solid var(--fg);box-shadow:8px 8px 0 var(--acc);padding:28px 24px 22px;width:min(560px,100%)}
 
 /* composer + archive */
 .two{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
@@ -148,6 +157,10 @@ textarea:focus{outline:none;border-color:var(--acc)}
 .chars{font-size:12px;color:var(--dim)}
 .locked{font-size:13px;color:var(--dim);border:1px dashed var(--line);padding:16px;margin-bottom:16px}
 
+.feedfilters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.chip{font:12px var(--mono);background:transparent;border:1px solid var(--line);color:var(--dim);padding:6px 10px}
+.chip:hover{color:var(--fg);border-color:var(--fg)}
+.chip.active{background:var(--fg);color:var(--bg);border-color:var(--fg)}
 .feed{display:flex;flex-direction:column;gap:12px;max-height:620px;overflow-y:auto;padding-right:4px}
 .thought{border:1px solid var(--line);padding:16px 18px;animation:in .25s steps(4)}
 @keyframes in{from{opacity:0;transform:translateY(6px)}}

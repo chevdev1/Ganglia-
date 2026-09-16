@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Node not found — Ganglia</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .notfound{min-height:calc(100svh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:48px 24px;gap:22px}
+  .nf-grid{display:grid;grid-template-columns:repeat(16,8px);grid-template-rows:repeat(8,8px);gap:3px}
+  .nf-grid b{width:8px;height:8px;background:var(--cell)}
+  .nf-grid b.probe{background:var(--acc);animation:nfblink 1.1s steps(2) infinite}
+  @keyframes nfblink{50%{opacity:.15}}
+  .nf-code{font-family:var(--px);font-size:clamp(48px,10vw,96px);line-height:1;color:var(--dim);margin:0}
+  .nf-title{font-family:var(--px);font-weight:400;font-size:clamp(22px,3.4vw,30px);margin:0}
+  .nf-sub{color:var(--dim);max-width:44ch;margin:0}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="/index.html#top" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
+    <nav aria-label="Main">
+      <a href="/index.html#mind">Mind</a><a href="/index.html#nodes">Nodes</a><a href="/index.html#archive">Archive</a><a href="/docs.html">Docs</a>
+    </nav>
+    <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
+  </div>
+</header>
+
+<main class="notfound">
+  <div class="nf-grid" id="nfgrid" aria-hidden="true"></div>
+  <p class="nf-code">404</p>
+  <h1 class="nf-title">This node does not exist.</h1>
+  <p class="nf-sub">The mind has 128 nodes, numbered #000 to #127. Whatever you were looking for isn't one of them.</p>
+  <a class="btn" href="/index.html" style="text-decoration:none">Back to the mind</a>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>A node is a right to send scenarios, not a share of anything and not living tissue.</p>
+    <p>No live token. No lab connection.</p>
+  </div>
+</footer>
+
+<script src="js/core.js"></script>
+<script>
+drawLogo();
+document.getElementById('theme').onclick=()=>{
+  const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark?'light':'dark'; drawLogo();
+};
+/* a small static 16x8 node grid, mostly dark; one "probe" cell searches, blinking, never landing */
+(function(){
+  const grid=document.getElementById('nfgrid');
+  const N=128;
+  let probe=Math.floor(Math.random()*N);
+  for(let i=0;i<N;i++){ const b=document.createElement('b'); grid.appendChild(b); }
+  const cells=[...grid.children];
+  cells[probe].classList.add('probe');
+  if (!reduce){
+    setInterval(()=>{
+      cells[probe].classList.remove('probe');
+      probe=Math.floor(Math.random()*N);
+      cells[probe].classList.add('probe');
+    }, 1400);
+  }
+})();
+</script>
+</body>
+</html>

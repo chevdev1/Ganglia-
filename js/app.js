@@ -7,7 +7,7 @@ const labels=['frontal','parietal','temporal','occipital','cingulate','insula','
 const state={curiosity:7,intensity:4,warmth:6,focus:5,restlessness:4};
 const owners=Array.from({length:128},()=>null);
 const scenarioCounts=Array.from({length:128},()=>0);
-let mine=null, selected=null, connected=false, address='';
+let mine=null, selected=null, connected=false, address='', claimInProgress=false;
 let token=localStorage.getItem('ganglia_token')||'';
 let lastThoughtId=0;
 const seen=new Set();
@@ -109,6 +109,13 @@ function renderPanel(){
   const c=document.getElementById('claim'); if(c) c.onclick=()=>{ claimNode(); };
 }
 
+function renderClaimProgress(step){
+  const labels=['Connecting…','Claiming node…','Node is yours'];
+  panel.innerHTML=`<div class="id">${pad(selected)}</div>
+  <div class="claimstep">${[0,1,2].map(i=>`<b class="${i<step?'done':i===step?'on':''}"></b>`).join('')}</div>
+  <p class="note" style="font-family:var(--px);font-size:14px;margin:10px 0 4px;color:var(--fg)">${labels[Math.min(step,2)]}</p>`;
+}
+
 let liveBarInited=false, lastThoughtAt=null;
 function relTime(iso){
   if(!iso) return 'no thoughts yet';
@@ -176,9 +183,8 @@ function applyWorld(data){
     clearSessionKind();
     paintConnect(); lockComposer();
   }
-  const claiming=document.getElementById('claim')?.disabled;
   renderGrid();
-  if(!claiming) renderPanel();
+  if(!claimInProgress) renderPanel();
 }
 
 function speak(text){
@@ -213,6 +219,8 @@ function renderThought(t, animate, prev){
   seen.add(t.id);
   lastThoughtId=Math.max(lastThoughtId,t.id);
   const el=document.createElement('article'); el.className='thought'; el.id='t'+t.id;
+  el.dataset.trigger=t.trigger||'autonomous';
+  if(t.node_id!==null&&t.node_id!==undefined) el.dataset.node=String(t.node_id);
   const tag=t.trigger==='scenario'?`<span class="tag acc">scenario</span>`: t.trigger==='claim'?`<span class="tag acc">claim</span>`:`<span class="tag">autonomous</span>`;
   const when=t.created_at?new Date(t.created_at).toTimeString().slice(0,5):'';
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -247,7 +255,26 @@ function ingestThoughts(list, animate){
       if(t.trigger==='scenario'||t.trigger==='claim'){ brain.target(t.node_id, true); const cell=grid.children[t.node_id]; if(cell){ cell.classList.remove('pulse'); void cell.offsetWidth; cell.classList.add('pulse'); } }
     } else if(animate) brain.ripple();
   });
+  if(fresh.length) applyFeedFilter();
 }
+
+let feedFilter='all';
+function applyFeedFilter(){
+  [...feed.children].forEach(el=>{
+    let show=true;
+    if(feedFilter==='scenario') show=el.dataset.trigger==='scenario';
+    else if(feedFilter==='autonomous') show=el.dataset.trigger!=='scenario'&&el.dataset.trigger!=='claim';
+    else if(feedFilter==='mine') show=mine!==null&&el.dataset.node===String(mine);
+    el.hidden=!show;
+  });
+}
+document.querySelectorAll('#feedfilters .chip').forEach(btn=>{
+  btn.onclick=()=>{
+    feedFilter=btn.dataset.filter;
+    document.querySelectorAll('#feedfilters .chip').forEach(b=>b.classList.toggle('active', b===btn));
+    applyFeedFilter();
+  };
+});
 
 async function loadState(animateNew){
   const data=await api('/api/state');
@@ -305,16 +332,23 @@ async function disconnect(){
 
 async function claimNode(){
   showErr('');
+  const i=selected;
+  claimInProgress=true;
   try{
+    renderClaimProgress(connected?1:0);
     if(!connected) await connect(false);
-    const i=selected, b=document.getElementById('claim');
-    if(b){ b.disabled=true; b.textContent='Claiming…'; }
+    renderClaimProgress(1);
     await api('/api/nodes/'+i+'/claim',{method:'POST', body:'{}'});
     mine=i; unlock();
+    renderClaimProgress(2);
     await loadState(true);
     burst();
     brain.target(i,true);
+    claimInProgress=false;
+    renderPanel();
+    showShareCard(i);
   }catch(err){
+    claimInProgress=false;
     showErr(err.message);
     renderPanel();
   }
@@ -352,6 +386,74 @@ document.getElementById('theme').onclick=()=>{
   const r=document.documentElement; const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
   r.dataset.theme = dark?'light':'dark'; drawLogo(); renderStates(); brain.colors();
 };
+
+function seededRandom(seed){
+  let s=(seed%2147483647)||1; if(s<=0) s+=2147483646;
+  return ()=>{ s=(s*16807)%2147483647; return (s-1)/2147483646; };
+}
+
+function drawShareCard(nodeId){
+  const cv=document.getElementById('sharecanvas');
+  if(!cv) return;
+  const ctx=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const bg=css('--bg'), fg=css('--fg'), acc=css('--acc'), dim=css('--dim'), cell=css('--cell');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle=dim; ctx.lineWidth=2; ctx.strokeRect(20,20,W-40,H-40);
+
+  ctx.textBaseline='top';
+  ctx.fillStyle=fg;
+  ctx.font='700 40px Silkscreen, monospace';
+  ctx.fillText('GANGLIA', 60, 58);
+  ctx.fillStyle=dim;
+  ctx.font='16px "Geist Mono", monospace';
+  ctx.fillText('one mind. 128 nodes.', 60, 108);
+
+  ctx.fillStyle=acc;
+  ctx.font='700 140px Silkscreen, monospace';
+  ctx.fillText(pad(nodeId), 60, 210);
+
+  ctx.fillStyle=dim;
+  ctx.font='20px "Geist Mono", monospace';
+  ctx.fillText('region: '+(labels[Math.floor(nodeId/16)]||''), 60, 400);
+  ctx.fillText('node holder since '+new Date().toISOString().slice(0,10), 60, 430);
+
+  const rnd=seededRandom(nodeId+1);
+  const N=5, size=26, ox=W-60-N*size, oy=60;
+  for(let y=0;y<N;y++){
+    for(let x=0;x<Math.ceil(N/2);x++){
+      const on=rnd()>0.55;
+      ctx.fillStyle=on?acc:cell;
+      ctx.fillRect(ox+x*size, oy+y*size, size-2, size-2);
+      const mx=N-1-x;
+      if(mx!==x) ctx.fillRect(ox+mx*size, oy+y*size, size-2, size-2);
+    }
+  }
+}
+
+function showShareCard(nodeId){
+  const sheet=document.getElementById('sharesheet');
+  if(!sheet) return;
+  drawShareCard(nodeId);
+  sheet.hidden=false;
+  const dl=document.getElementById('sharedownload');
+  if(dl) dl.onclick=()=>{
+    const cv=document.getElementById('sharecanvas');
+    const a=document.createElement('a');
+    a.href=cv.toDataURL('image/png');
+    a.download='ganglia-node-'+String(nodeId).padStart(3,'0')+'.png';
+    a.click();
+  };
+  const post=document.getElementById('sharepost');
+  if(post){
+    const text=encodeURIComponent(`I hold node ${pad(nodeId)} of Ganglia — one shared mind, 128 people.`);
+    const url=encodeURIComponent(location.origin+location.pathname);
+    post.href=`https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+  }
+  const close=()=>{ sheet.hidden=true; };
+  const x=document.getElementById('sharex'); if(x) x.onclick=close;
+  sheet.onclick=e=>{ if(e.target===sheet) close(); };
+}
 
 setInterval(()=>{ loadState(true).catch(()=>{}); }, 3000);
 

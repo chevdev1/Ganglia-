@@ -8,10 +8,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Header, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
+from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -99,6 +101,15 @@ app = FastAPI(
 SessionDep = Annotated[Session, Depends(get_session)]
 UserDep = Annotated[User, Depends(current_user)]
 MaybeUser = Annotated[User | None, Depends(optional_user)]
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _custom_404(request: Request, exc: StarletteHTTPException):
+    """Pixel 404 page for missing pages/assets. API 404s stay JSON."""
+
+    if exc.status_code == 404 and not request.url.path.startswith("/api"):
+        return FileResponse(ROOT / "404.html", status_code=404)
+    return await http_exception_handler(request, exc)
 
 
 def _me_out(user: User | None, token: str | None = None) -> MeOut | None:
