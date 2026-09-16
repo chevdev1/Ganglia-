@@ -101,12 +101,18 @@ function renderPanel(){
   const i=selected,o=owners[i], alias=window.nodeAliases&&window.nodeAliases[i];
   const status=i===mine?'Yours':o?'Claimed':'Free';
   const who=i===mine?(window.myAlias||short(address)): (alias||o||'nobody yet');
-  panel.innerHTML=`<div class="id">${pad(i)}</div>
+  panel.innerHTML=`<div class="id">${pad(i)}<button type="button" class="idcopy" id="idcopy" aria-label="Copy node id">copy</button></div>
   <dl><dt>Status</dt><dd>${status}</dd><dt>Region</dt><dd>${labels[Math.floor(i/16)]}</dd>  <dt>Owner</dt><dd>${who}</dd><dt>Scenarios</dt><dd>${scenarioCounts[i]||0}</dd></dl>
   ${ i===mine ? `<a class="btn acc" href="/me.html" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px">Open cabinet</a><a class="btn ghost" href="#archive" style="display:block;text-align:center;text-decoration:none">Send a scenario</a>`
     : o ? `<button class="btn ghost" disabled>Already claimed</button>`
     : `<button class="btn" id="claim">${connected?'Claim this node':'Connect wallet to claim'}</button><p class="note">One owner per node, tied to your wallet. Reconnect later and this seat is still yours.</p>`}`;
   const c=document.getElementById('claim'); if(c) c.onclick=()=>{ claimNode(); };
+  const idc=document.getElementById('idcopy');
+  if(idc) idc.onclick=()=>{
+    navigator.clipboard?.writeText(pad(i)).catch(()=>{});
+    const orig=idc.textContent; idc.textContent='copied';
+    setTimeout(()=>{ idc.textContent=orig; },1200);
+  };
 }
 
 function renderClaimProgress(step){
