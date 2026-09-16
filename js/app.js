@@ -469,6 +469,36 @@ document.getElementById('theme').onclick=()=>{
   });
 };
 
+/* brain skin: purely cosmetic CSS-variable swap, persisted per device */
+const SKIN_SWATCH={'':'#4D7CFF',neon:'#39FFC1',pink:'#FF4FA8',cyberpunk:'#F6D32D',fade:'#C9A227'};
+function updateSkinBtn(){
+  const skin=document.documentElement.dataset.skin||'';
+  const sw=document.getElementById('skinSwatch');
+  if(sw) sw.style.background=SKIN_SWATCH[skin]||SKIN_SWATCH[''];
+  document.querySelectorAll('.skin-opt').forEach(b=>b.classList.toggle('active', (b.dataset.skin||'')===skin));
+}
+function applySkin(skin){
+  themeWipe(()=>{
+    if(skin) document.documentElement.dataset.skin=skin; else delete document.documentElement.dataset.skin;
+    drawLogo(); renderStates(); brain.colors();
+    updateSkinBtn();
+  });
+  localStorage.setItem('ganglia_skin', skin||'');
+}
+const savedSkin=localStorage.getItem('ganglia_skin');
+if(savedSkin) document.documentElement.dataset.skin=savedSkin;
+updateSkinBtn();
+const skinBtn=document.getElementById('skinBtn'), skinSheet=document.getElementById('skinsheet');
+if(skinBtn&&skinSheet){
+  skinBtn.onclick=()=>{ skinSheet.hidden=false; };
+  const closeSkin=()=>{ skinSheet.hidden=true; };
+  document.getElementById('skinx').onclick=closeSkin;
+  skinSheet.onclick=e=>{ if(e.target===skinSheet) closeSkin(); };
+  document.querySelectorAll('.skin-opt').forEach(b=>{
+    b.onclick=()=>{ applySkin(b.dataset.skin||''); closeSkin(); };
+  });
+}
+
 /* sound: on by default (ambient pad + short blips), user can mute */
 let audioCtx=null, soundOn=localStorage.getItem('ganglia_sound')!=='0';
 function updateSoundBtn(){ const b=document.getElementById('sound'); if(b) b.setAttribute('aria-pressed', String(soundOn)); }

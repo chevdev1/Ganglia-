@@ -18,6 +18,15 @@
 }
 :root[data-theme="dark"]{--bg:#000000; --fg:#F2F2F2; --dim:#7A7A7A; --line:#1F1F1F; --cell:#161616; --claimed:#F2F2F2; --acc:#4D7CFF; --acc-ink:#000000;}
 
+/* brain skins: cosmetic palettes, opinionated dark presets regardless of data-theme.
+   Same 5 vars (--bg/--fg/--dim/--cell/--acc) the brain renderer already reads via
+   brain.colors() — no renderer changes needed except the optional "fade" gradient. */
+:root[data-skin="neon"]{--bg:#050807; --fg:#E4FFF6; --dim:#5E8C7D; --line:#123028; --cell:#0E1E19; --claimed:#E4FFF6; --acc:#39FFC1; --acc-ink:#052018;}
+:root[data-skin="pink"]{--bg:#0B0508; --fg:#FFEAF4; --dim:#8A5E77; --line:#341521; --cell:#1E0F17; --claimed:#FFEAF4; --acc:#FF4FA8; --acc-ink:#2B0A18;}
+:root[data-skin="cyberpunk"]{--bg:#0A0612; --fg:#F3E9FF; --dim:#7C6693; --line:#2A1B3F; --cell:#1B0F2A; --claimed:#F3E9FF; --acc:#F6D32D; --acc-ink:#241A00;}
+:root[data-skin="fade"]{--bg:#07040A; --fg:#F2EDF5; --dim:#7D7488; --line:#241A2E; --cell:#14101B; --claimed:#F2EDF5; --acc:#C9A227; --acc-ink:#241900;
+  --fade-a:#7B2FF7; --fade-b:#F5A623;}
+
 *{box-sizing:border-box}
 html,body{margin:0}
 @media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
@@ -182,6 +191,17 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .sheet[hidden]{display:none!important}
 .sheet-card{position:relative;background:var(--bg);border:1px solid var(--fg);box-shadow:8px 8px 0 var(--acc);padding:28px 24px 22px;width:min(560px,100%)}
 
+/* skin picker button (small live swatch) + popover list */
+.skinbtn{display:flex;align-items:center;justify-content:center}
+.skinbtn i{display:block;width:12px;height:12px;background:var(--acc)}
+.skin-list{display:grid;gap:10px;margin-top:16px}
+.skin-opt{display:flex;align-items:center;gap:12px;background:transparent;border:1px solid var(--line);padding:12px 14px;text-align:left;transition:border-color var(--d-1) var(--ease-out),box-shadow var(--d-1) var(--ease-out)}
+.skin-opt:hover{border-color:var(--fg)}
+.skin-opt.active{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.skin-opt span{font-family:var(--px);font-size:13px}
+.skin-swatch{display:block;width:20px;height:20px;flex:none;background:var(--sw);border:1px solid rgba(0,0,0,.15)}
+.skin-fade{background:linear-gradient(135deg,#7B2FF7,#F5A623)}
+
 /* composer + archive */
 .two{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
 .composer{border:1px solid var(--line);padding:22px}
@@ -327,7 +347,7 @@ footer p{margin:0 0 12px;max-width:60ch}
 @media (max-width:900px){
   .bar{flex-wrap:wrap;height:auto;padding:10px 0 8px;gap:10px 12px;row-gap:8px}
   .brand{order:1}
-  #sound,#theme{order:2}
+  #sound,#theme,#skinBtn{order:2}
   .auth{order:3;margin-left:auto}
   nav{
     order:4;width:100%;margin-left:0;flex-wrap:nowrap;

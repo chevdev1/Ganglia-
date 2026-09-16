@@ -28,6 +28,7 @@
     </nav>
     <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="true" title="Sound: ambient pad + short blips">♪</button>
     <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
+    <button class="theme skinbtn" id="skinBtn" aria-label="Brain skin" title="Brain skin"><i id="skinSwatch"></i></button>
     <div class="auth" id="auth">
       <button class="btn ghost" id="leave" hidden type="button">Leave</button>
       <a class="btn ghost" id="profile" href="/me.html" hidden>Cabinet</a>
@@ -176,6 +177,32 @@
     </div>
   </section>
 </main>
+
+<div class="sheet" id="skinsheet" hidden>
+  <div class="sheet-card" role="dialog" aria-labelledby="skintitle">
+    <button type="button" class="wallet-x" id="skinx" aria-label="Close">×</button>
+    <p class="kicker">cosmetic, local only</p>
+    <h2 id="skintitle" class="wallet-h">brain <span>skin</span></h2>
+    <p class="wallet-tip">Purely visual — changes the mind's colours on this device. Nothing about ownership or the product changes.</p>
+    <div class="skin-list" id="skinList">
+      <button type="button" class="skin-opt" data-skin="">
+        <i class="skin-swatch" style="--sw:#4D7CFF"></i><span>Default</span>
+      </button>
+      <button type="button" class="skin-opt" data-skin="neon">
+        <i class="skin-swatch" style="--sw:#39FFC1"></i><span>Neon</span>
+      </button>
+      <button type="button" class="skin-opt" data-skin="pink">
+        <i class="skin-swatch" style="--sw:#FF4FA8"></i><span>Pink</span>
+      </button>
+      <button type="button" class="skin-opt" data-skin="cyberpunk">
+        <i class="skin-swatch" style="--sw:#F6D32D"></i><span>Cyberpunk</span>
+      </button>
+      <button type="button" class="skin-opt" data-skin="fade">
+        <i class="skin-swatch skin-fade"></i><span>Fade</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <div class="sheet" id="sharesheet" hidden>
   <div class="sheet-card" role="dialog" aria-labelledby="sharetitle">

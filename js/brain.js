@@ -13,7 +13,12 @@ const brain=(()=>{
   const W=320,H=240; cv.width=W; cv.height=H;
   const img=g.createImageData(W,H), buf=img.data, zb=new Float32Array(W*H);
   const hex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};
-  let COL; const colors=()=>{COL={bg:hex(css('--bg')),fg:hex(css('--fg')),dim:hex(css('--dim')),cell:hex(css('--cell')),acc:hex(css('--acc'))};};
+  let COL; const colors=()=>{
+    COL={bg:hex(css('--bg')),fg:hex(css('--fg')),dim:hex(css('--dim')),cell:hex(css('--cell')),acc:hex(css('--acc'))};
+    const fa=css('--fade-a'), fb=css('--fade-b');
+    COL.gradA = fa ? hex(fa) : null;
+    COL.gradB = fb ? hex(fb) : null;
+  };
   const BAY=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
   let sd=7; const r=()=>((sd=(sd*16807)%2147483647)/2147483647);
 
@@ -131,7 +136,7 @@ const brain=(()=>{
       else { rotY+=vY; vY*=.94; if(!reduce && ts-lastInteract>2500) rotY+=.0035; }
     }
     setRot();
-    const {bg,fg,cell,acc,dim}=COL;
+    const {bg,fg,cell,acc,dim,gradA,gradB}=COL;
     for(let i=0;i<W*H;i++){ const o=i*4; buf[o]=bg[0];buf[o+1]=bg[1];buf[o+2]=bg[2];buf[o+3]=255; zb[i]=-9; }
     for(let y=4;y<H;y+=8)for(let x=4;x<W;x+=8) put(x,y,cell);
     // surface
@@ -143,8 +148,16 @@ const brain=(()=>{
       const nx=P[k+3]*cy_+P[k+5]*sy_, z1=-P[k+3]*sy_+P[k+5]*cy_, ny=P[k+4]*cx_-z1*sx_;
       let b=Math.max(0,nx*L[0]+ny*L[1]+nz*L[2])*.75+.32; b*=P[k+6];
       const lvl=b*17;
+      // "fade" skin: lerp a fixed skin-space hue across the surface instead of flat fg/cell
+      let litR=fg[0],litG=fg[1],litB=fg[2], shR=cell[0],shG=cell[1],shB=cell[2];
+      if(gradA){
+        let t=(P[k]+.8)/1.6; t=t<0?0:t>1?1:t;
+        litR=(gradA[0]+(gradB[0]-gradA[0])*t)|0; litG=(gradA[1]+(gradB[1]-gradA[1])*t)|0; litB=(gradA[2]+(gradB[2]-gradA[2])*t)|0;
+        shR=(litR*.35)|0; shG=(litG*.35)|0; shB=(litB*.35)|0;
+      }
       for(let oy=0;oy<2;oy++)for(let ox=0;ox<2;ox++){ const px=x+ox,py=y+oy,idx=py*W+px; if(z<=zb[idx])continue; zb[idx]=z;
-        const o=idx*4, c= lvl>BAY[(py%4)*4+px%4] ? fg : cell; buf[o]=c[0];buf[o+1]=c[1];buf[o+2]=c[2]; }
+        const o=idx*4, lit=lvl>BAY[(py%4)*4+px%4];
+        buf[o]=lit?litR:shR; buf[o+1]=lit?litG:shG; buf[o+2]=lit?litB:shB; }
     }
     // nodes projection & visibility
     for(let i=0;i<128;i++){ const n=NODE[i]; proj(n.x,n.y,n.z,scr[i]); vis[i]= rotN(n.nx,n.ny,n.nz)>.05 ?1:0; }
