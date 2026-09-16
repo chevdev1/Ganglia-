@@ -162,6 +162,18 @@ addEventListener('scroll',()=>{
   while(i>0 && secs[i].getBoundingClientRect().top>100) i--;
   toc.forEach((a,j)=>a.classList.toggle('active',j===i));
 },{passive:true});
+
+/* nav links "decode" on hover, desktop only */
+if (!reduce && !matchMedia('(hover: none)').matches){
+  const busy=new WeakSet();
+  document.querySelectorAll('nav a').forEach(a=>{
+    a.addEventListener('mouseenter', ()=>{
+      if (busy.has(a)) return;
+      busy.add(a);
+      scramble(a, {duration:320}).then(()=>busy.delete(a));
+    });
+  });
+}
 </script>
 </body>
 </html>

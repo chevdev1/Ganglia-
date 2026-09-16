@@ -85,29 +85,34 @@ function lineReveal(el, {stagger=60, duration=480}={}){
   return new Promise(resolve=>{
     const text = el.textContent;
     el.setAttribute('aria-label', text);
-    const words = text.split(/(\s+)/).filter(w=>w.length);
+    const tokens = text.split(/(\s+)/).filter(t=>t.length);
     el.innerHTML='';
-    const spans = words.map(w=>{
+    const wordSpans=[];
+    tokens.forEach(t=>{
+      if (/^\s+$/.test(t)){ el.appendChild(document.createTextNode(t)); return; }
       const s=document.createElement('span');
-      s.textContent=w;
+      s.textContent=t;
       s.style.display='inline-block';
       el.appendChild(s);
-      return s;
+      wordSpans.push(s);
     });
     const lines = new Map();
-    spans.forEach(s=>{
+    wordSpans.forEach(s=>{
       const top = s.offsetTop;
       if (!lines.has(top)) lines.set(top, []);
       lines.get(top).push(s);
     });
     el.innerHTML='';
     const groups = [...lines.values()];
-    groups.forEach((spans,i)=>{
+    groups.forEach((lineSpans,i)=>{
       const wrap=document.createElement('span');
       wrap.style.cssText='display:block;overflow:hidden';
       const inner=document.createElement('span');
       inner.style.cssText=`display:block;transform:translateY(110%);opacity:0;transition:transform ${duration}ms var(--ease-out),opacity ${duration}ms var(--ease-out);transition-delay:${i*stagger}ms`;
-      spans.forEach(s=>inner.appendChild(s));
+      lineSpans.forEach((s,j)=>{
+        inner.appendChild(s);
+        if (j<lineSpans.length-1) inner.appendChild(document.createTextNode(' '));
+      });
       wrap.appendChild(inner);
       el.appendChild(wrap);
       requestAnimationFrame(()=>requestAnimationFrame(()=>{
@@ -203,6 +208,65 @@ function themeWipe(applyTheme, {duration=400}={}){
     for(let i=0;i<upto;i++) cells[i].el.style.visibility='hidden';
     if(step>=steps){ clearInterval(iv); overlay.remove(); }
   }, stepDur);
+}
+
+/* ambient: minimal procedural night-pixel pad, synthesised with WebAudio, no audio files */
+let _ambientCtx=null, _ambientNodes=null, _ambientTimer=null, _ambientOn=false;
+function startAmbient(){
+  if (_ambientOn) return;
+  _ambientOn=true;
+  _ambientCtx = _ambientCtx || new (window.AudioContext||window.webkitAudioContext)();
+  const ac=_ambientCtx;
+  if (ac.state==='suspended') ac.resume().catch(()=>{});
+
+  const master=ac.createGain();
+  master.gain.value=0;
+  master.connect(ac.destination);
+  master.gain.linearRampToValueAtTime(0.045, ac.currentTime+3);
+
+  const scale=[110.00,130.81,146.83,164.81,196.00]; // low, moody, pentatonic-ish
+  const drones=scale.slice(0,3).map((freq,i)=>{
+    const o=ac.createOscillator();
+    o.type='sine'; o.frequency.value=freq; o.detune.value=(i-1)*4;
+    const g=ac.createGain(); g.gain.value=0.5;
+    const lfo=ac.createOscillator(); lfo.frequency.value=0.05+i*0.02;
+    const lfoGain=ac.createGain(); lfoGain.gain.value=0.25;
+    lfo.connect(lfoGain); lfoGain.connect(g.gain);
+    o.connect(g); g.connect(master);
+    o.start(); lfo.start();
+    return {o,lfo};
+  });
+
+  function ping(){
+    if (!_ambientOn) return;
+    const freq=scale[(Math.random()*scale.length)|0]*2;
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=freq;
+    const g=ac.createGain(); g.gain.value=0;
+    o.connect(g);
+    if (ac.createStereoPanner){
+      const pan=ac.createStereoPanner(); pan.pan.value=Math.random()*2-1;
+      g.connect(pan); pan.connect(master);
+    } else g.connect(master);
+    const t=ac.currentTime;
+    g.gain.linearRampToValueAtTime(0.06, t+0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+2.2);
+    o.start(t); o.stop(t+2.3);
+    _ambientTimer=setTimeout(ping, 4000+Math.random()*6000);
+  }
+  _ambientTimer=setTimeout(ping, 3000+Math.random()*3000);
+  _ambientNodes={master, drones};
+}
+function stopAmbient(){
+  if (!_ambientOn) return;
+  _ambientOn=false;
+  clearTimeout(_ambientTimer);
+  if (_ambientNodes){
+    const {master, drones}=_ambientNodes, ac=_ambientCtx;
+    master.gain.cancelScheduledValues(ac.currentTime);
+    master.gain.linearRampToValueAtTime(0, ac.currentTime+1.2);
+    setTimeout(()=>{ drones.forEach(d=>{ try{d.o.stop(); d.lfo.stop();}catch(_e){} }); }, 1300);
+  }
+  _ambientNodes=null;
 }
 
 /* onEnterView: fire `cb` once when `el` crosses `threshold` visibility, scrolling down only */

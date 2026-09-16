@@ -397,8 +397,8 @@ document.getElementById('theme').onclick=()=>{
   });
 };
 
-/* sound: off by default, WebAudio blips on interaction, ~short */
-let audioCtx=null, soundOn=localStorage.getItem('ganglia_sound')==='1';
+/* sound: on by default (ambient pad + short blips), user can mute */
+let audioCtx=null, soundOn=localStorage.getItem('ganglia_sound')!=='0';
 function updateSoundBtn(){ const b=document.getElementById('sound'); if(b) b.setAttribute('aria-pressed', String(soundOn)); }
 function blip(freq=880, dur=0.05, vol=0.05){
   if(!soundOn) return;
@@ -417,9 +417,19 @@ if(soundBtn) soundBtn.onclick=()=>{
   soundOn=!soundOn;
   localStorage.setItem('ganglia_sound', soundOn?'1':'0');
   updateSoundBtn();
-  if(soundOn) blip(880,0.06,0.06);
+  if(soundOn){ blip(880,0.06,0.06); startAmbient(); } else { stopAmbient(); }
 };
 updateSoundBtn();
+
+/* ambient can only start inside a real user gesture (browser autoplay rules) —
+   arm it on the first click/key/touch/scroll after load, if sound is enabled */
+if(soundOn){
+  const armAmbient=()=>{
+    startAmbient();
+    ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>removeEventListener(ev,armAmbient));
+  };
+  ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,armAmbient,{passive:true}));
+}
 
 function seededRandom(seed){
   let s=(seed%2147483647)||1; if(s<=0) s+=2147483646;

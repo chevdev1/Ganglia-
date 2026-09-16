@@ -26,7 +26,7 @@
     <nav aria-label="Main">
       <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/docs.html">Docs</a>
     </nav>
-    <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="false" title="Sound (off by default)">♪</button>
+    <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="true" title="Sound: ambient pad + short blips">♪</button>
     <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
     <div class="auth" id="auth">
       <button class="btn ghost" id="leave" hidden type="button">Leave</button>
@@ -238,6 +238,19 @@ if (!reduce) {
     });
   }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
   targets.forEach(t=>io.observe(t));
+})();
+
+/* nav links "decode" on hover, desktop only */
+(function(){
+  if (reduce || matchMedia('(hover: none)').matches) return;
+  let busy=new WeakSet();
+  document.querySelectorAll('nav a').forEach(a=>{
+    a.addEventListener('mouseenter', ()=>{
+      if (busy.has(a)) return;
+      busy.add(a);
+      scramble(a, {duration:320}).then(()=>busy.delete(a));
+    });
+  });
 })();
 
 /* animated favicon: a node blinks on the pixel mark */
