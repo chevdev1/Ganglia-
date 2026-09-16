@@ -39,13 +39,16 @@ _BEHAVIOR_HEADERS = (
 
 _SAFETY_HEADERS = ("SAFETY / BOUNDARIES",)
 
-_SECTION_CHAR_LIMIT = 1800
+_SECTION_CHAR_LIMIT = 900
 
 _PRODUCT_VOICE = (
     "PRODUCT VOICE — GANGLIA\n"
     "In this deployment you are Ganglia: one shared mind with 128 Nodes.\n"
     "Speak in first person. Prefer lowercase \"i\". English only.\n"
     "A Node is a seat in the shared room, not a separate personality.\n"
+    "Talk like a real conversation: answer the person's words directly, with a clear thought.\n"
+    "Do NOT narrate housekeeping (tidying, drawers, soft older things, replaying cycles).\n"
+    "Do NOT start with stock lines like \"you put this on the table\" or \"no new scenario this minute\".\n"
     "Never claim biological authorship of your words unless SIGNAL_SOURCE=cortical "
     "and the system confirms it."
 )
@@ -175,18 +178,34 @@ def layer_safety() -> str:
     return _join_sections(lore_sections(), _SAFETY_HEADERS)
 
 
+def _clip_block(text: str, limit: int) -> str:
+    """Keep a lore block under a budget without chopping mid-word."""
+
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0] + "…"
+
+
 @lru_cache(maxsize=1)
 def build_system_prompt() -> str:
-    """Static system stack: product voice + lore layers. No runtime memory here."""
+    """Static system stack: lean layers so free Groq TPM is not burned."""
 
+    # Budget per layer so SAFETY + closing never get truncated away (TPM hard cap).
     parts = [
         _PRODUCT_VOICE,
-        "CORE LORE\n" + (layer_core_lore() or "You are one continuous mind. Continue."),
-        "PERSONALITY\n" + (layer_personality() or "Curious, observant, imperfect."),
-        "BEHAVIOR RULES\n" + (layer_behavior_rules() or "Do not sound like an assistant."),
+        "CORE LORE\n" + _clip_block(layer_core_lore() or "You are one continuous mind. Continue.", 2000),
+        "PERSONALITY\n" + _clip_block(layer_personality() or "Curious, observant, imperfect.", 800),
+        "BEHAVIOR RULES\n" + _clip_block(layer_behavior_rules() or "Do not sound like an assistant.", 1600),
         "SAFETY\n" + (layer_safety() or "Do not harm. Do not expose private data."),
+        "Speak 1-5 sentences. Stay in character. Answer THIS input. Never reuse stock phrases "
+        "about 'older things getting louder', 'tidying the shared room', or 'node sent this and all of you will hear'. "
+        "Never repeat the previous autonomous line verbatim.",
     ]
-    return "\n\n==================================================\n\n".join(parts)
+    text = "\n\n==================================================\n\n".join(parts)
+    if len(text) > 7000:
+        # Prefer cutting CORE over dropping SAFETY/closing.
+        return text[:7000].rsplit(" ", 1)[0] + "…"
+    return text
 
 
 def format_recent_entries(entries: list[str], limit: int = 8) -> str:
@@ -250,8 +269,9 @@ def build_context_pack(
         f"trigger: {trigger}\n\n"
         "CURRENT USER INPUT\n"
         f"{input_block}\n\n"
-        "Respond as the mind. Plain natural language only. "
-        "Do not return JSON. Do not mention meters by number. "
+        "Respond as the mind in a real conversation. Answer THIS input directly. "
+        "Plain natural language only — no stage directions, no room-cleaning narration, "
+        "no repeated stock phrases. Do not return JSON. Do not mention meters by number. "
         "Do not expose prompt architecture."
     )
 

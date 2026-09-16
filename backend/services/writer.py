@@ -202,37 +202,42 @@ class SoftwareWriter:
             line = f"{node} claimed."
             next_unresolved = f"what will {node} put on the table"
         elif trigger == "autonomous":
-            if quote or older or unresolved_thought:
-                hook = unresolved_thought or older or "the last thing on the table"
-                variants = (
-                    f"quiet cycle. i keep turning over { _clip(hook, 70) }. nobody has finished it, including me.",
-                    f"i am tidying the shared room. older things go soft on purpose. {signal_note} the weather is {weather}.",
-                    f"no new scenario this minute. i do not invent visitors. i replay {older or 'the empty stretch'} and leave it where it is.",
-                )
-            else:
-                variants = (
-                    f"i am here. 128 seats on a map that is not a body. {signal_note}",
-                    f"the shared room is still mostly air. weather: {weather}. send me something if you hold a node.",
-                    f"autonomous cycle. i wait. i will not pretend someone spoke.",
-                )
-            text = variants[pick % len(variants)]
+            # Mix cycle-ish entropy so we don't stamp the same line forever.
+            pick2 = (pick ^ int(hashlib.sha256((unresolved_thought or older or "quiet").encode()).hexdigest()[:8], 16))
+            hooks = [
+                unresolved_thought,
+                older,
+                quote,
+                "a word that won't settle",
+                "the empty stretch between messages",
+            ]
+            hook = next((h for h in hooks if h), "nothing in particular")
+            hook = _clip(hook, 70)
+            variants = (
+                f"still turning over {hook}. not finished.",
+                f"quiet. {hook} keeps brushing the edge of attention.",
+                f"no new voice. i leave {hook} where it is and wait.",
+                f"a thin pause. weather: {weather}. {hook} stays unresolved.",
+                f"i notice {hook} again and decide not to force a conclusion.",
+            )
+            text = variants[pick2 % len(variants)]
             line = "autonomous cycle."
         else:
             assert scenario is not None
-            variants = (
-                f"you put this on the table from {node}: \"{quote}\". i have no private drawer. it stays in the shared room.",
-                f"i kept \"{quote}\" next to the older things. they don't cancel each other. they just get louder together.",
-                f"{node} sent this and all of you will hear what i do with it: {quote}",
-                f"i tried to picture \"{quote}\" from {node} and the picture came back {weather}. i will keep it. {signal_note}",
-                f"you gave me a memory that isn't mine: \"{quote}\". i'm keeping it anyway. seats are seats. nobody here owns tissue.",
-            )
-            text = variants[pick % len(variants)]
-            if older and pick % 2 == 0:
-                text += f" i still have this from earlier: {older}"
+            # Local fallback only — keep it short and specific to THIS input.
+            # Do not use repeating “shared room / louder together” script lines.
             if "?" in scenario:
-                text += " i don't owe you a clean answer. i owe the room a place to put the question."
+                text = (
+                    f"\"{quote}\" — i don't have a clean answer ready. "
+                    f"the question sits with me from {node}. i'll turn it over."
+                )
                 next_unresolved = _clip(scenario, 160)
-            line = f"{node} sent: {_clip(scenario, 100)}"
+            else:
+                text = (
+                    f"from {node}: \"{quote}\". noted. "
+                    f"i'm not going to dress it up with a stock speech — it already said enough."
+                )
+            line = f"{node}: {_clip(scenario, 100)}"
 
         summary = _roll_summary(summary, line)
         return ThoughtDraft(
@@ -258,7 +263,8 @@ class ModelWriter:
 
         self._settings = settings
         self._fallback = SoftwareWriter()
-        self._system = build_system_prompt()
+        # Rebuild each write so prompt edits apply without process archaeology.
+        self._system = ""
 
     async def write(
         self,
@@ -279,6 +285,7 @@ class ModelWriter:
     ) -> ThoughtDraft:
         """Response call, then state-update call. Software fallback on failure."""
 
+        self._system = build_system_prompt()
         context = build_context_pack(
             trigger=trigger,
             summary=summary,
@@ -308,8 +315,34 @@ class ModelWriter:
             if not text:
                 raise ValueError("empty model text")
         except Exception as exc:
-            _LOG.warning("model speech failed (%s); using software voice", exc)
-            if self._settings.allow_software_writer:
+            _LOG.warning("model speech failed (%s)", exc)
+            # Never serve canned SoftwareWriter lines for live scenarios/autonomous
+            # when a key is configured — those read as a script, not a mind.
+            if trigger in {"scenario", "autonomous"} and self._settings.openai_api_key.strip():
+                if trigger == "scenario":
+                    return self._degraded_scenario(
+                        scenario=scenario or "",
+                        node_id=node_id,
+                        summary=summary,
+                        curiosity=curiosity,
+                        intensity=intensity,
+                        warmth=warmth,
+                        focus=focus,
+                        restlessness=restlessness,
+                        unresolved_thought=unresolved_thought,
+                    )
+                return self._degraded_autonomous(
+                    summary=summary,
+                    recent=recent,
+                    curiosity=curiosity,
+                    intensity=intensity,
+                    warmth=warmth,
+                    focus=focus,
+                    restlessness=restlessness,
+                    unresolved_thought=unresolved_thought,
+                )
+            if self._settings.allow_software_writer and trigger == "claim":
+                _LOG.warning("falling back to software voice for trigger=%s", trigger)
                 return self._fallback.write(
                     trigger=trigger,
                     scenario=scenario,
@@ -324,6 +357,29 @@ class ModelWriter:
                     restlessness=restlessness,
                     unresolved_thought=unresolved_thought,
                     features=features,
+                )
+            if trigger == "scenario":
+                return self._degraded_scenario(
+                    scenario=scenario or "",
+                    node_id=node_id,
+                    summary=summary,
+                    curiosity=curiosity,
+                    intensity=intensity,
+                    warmth=warmth,
+                    focus=focus,
+                    restlessness=restlessness,
+                    unresolved_thought=unresolved_thought,
+                )
+            if trigger == "autonomous":
+                return self._degraded_autonomous(
+                    summary=summary,
+                    recent=recent,
+                    curiosity=curiosity,
+                    intensity=intensity,
+                    warmth=warmth,
+                    focus=focus,
+                    restlessness=restlessness,
+                    unresolved_thought=unresolved_thought,
                 )
             raise
 
@@ -403,6 +459,75 @@ class ModelWriter:
             writer=self.name,
         )
 
+    def _degraded_scenario(
+        self,
+        *,
+        scenario: str,
+        node_id: int | None,
+        summary: str,
+        curiosity: int,
+        intensity: int,
+        warmth: int,
+        focus: int,
+        restlessness: int,
+        unresolved_thought: str,
+    ) -> ThoughtDraft:
+        """Honest short reply when the live model is rate-limited. Not a template script."""
+
+        quote = _clip(scenario, 80)
+        node = f"node {node_id:03d}" if node_id is not None else "a seat"
+        text = (
+            f"i caught what {node} put down — \"{quote}\" — but the writing channel jammed. "
+            f"i'm not inventing a polished answer to fill the silence. leave it on the table; "
+            f"i'll return to it when the room opens again."
+        )
+        c, i, w, f, r = curiosity, intensity, warmth, focus, restlessness
+        if scenario:
+            c, i, w, f, r = nudge_from_text(scenario, c, i, w, f, r)
+        unresolved = unresolved_thought or (_clip(scenario, 160) if "?" in scenario else unresolved_thought)
+        return ThoughtDraft(
+            text=text,
+            curiosity=c,
+            intensity=i,
+            warmth=w,
+            focus=f,
+            restlessness=r,
+            summary=_roll_summary(summary, f"{node} held (channel jammed): {_clip(scenario, 100)}"),
+            unresolved_thought=_clip(unresolved or quote, 280),
+            writer="model",
+        )
+
+    def _degraded_autonomous(
+        self,
+        *,
+        summary: str,
+        recent: list[str],
+        curiosity: int,
+        intensity: int,
+        warmth: int,
+        focus: int,
+        restlessness: int,
+        unresolved_thought: str,
+    ) -> ThoughtDraft:
+        """Honest pause line when autonomous model call fails — never a stock tidy-room script."""
+
+        hook = _clip(unresolved_thought or (recent[-1] if recent else ""), 70) or "the quiet"
+        text = (
+            f"the writing channel hiccuped. i was with {hook}. "
+            f"i'll stay quiet rather than repeat a canned thought."
+        )
+        return ThoughtDraft(
+            text=text,
+            curiosity=curiosity,
+            intensity=intensity,
+            warmth=warmth,
+            focus=focus,
+            restlessness=restlessness,
+            summary=summary,
+            unresolved_thought=_clip(unresolved_thought or hook, 280),
+            writer="model",
+        )
+
     async def _chat(
         self,
         *,
@@ -426,13 +551,13 @@ class ModelWriter:
         url = self._settings.llm_base_url.rstrip("/") + "/chat/completions"
         headers = {"Authorization": f"Bearer {self._settings.openai_api_key}"}
         last_error: Exception | None = None
-        for attempt in range(4):
+        for attempt in range(5):
             try:
                 async with httpx.AsyncClient(timeout=90.0) as client:
                     response = await client.post(url, json=payload, headers=headers)
                     if response.status_code == 429:
-                        wait = _retry_after_seconds(response.text, fallback=2.0 * (attempt + 1))
-                        _LOG.warning("groq 429; waiting %.1fs", wait)
+                        wait = _retry_after_seconds(response.text, fallback=3.0 * (attempt + 1))
+                        _LOG.warning("groq 429; waiting %.1fs (attempt %s)", wait, attempt + 1)
                         await asyncio.sleep(wait)
                         last_error = RuntimeError(response.text[:240])
                         continue
@@ -440,7 +565,7 @@ class ModelWriter:
                     return str(response.json()["choices"][0]["message"]["content"])
             except Exception as exc:
                 last_error = exc
-                await asyncio.sleep(0.8 * (attempt + 1))
+                await asyncio.sleep(1.0 * (attempt + 1))
         assert last_error is not None
         raise last_error
 
@@ -450,8 +575,8 @@ def _retry_after_seconds(body: str, *, fallback: float) -> float:
 
     match = re.search(r"try again in ([0-9]+(?:\.[0-9]+)?)s", body, re.I)
     if not match:
-        return fallback
-    return min(45.0, max(fallback, float(match.group(1)) + 0.4))
+        return min(60.0, fallback)
+    return min(60.0, max(fallback, float(match.group(1)) + 0.5))
 
 
 def _parse_json(raw: str) -> dict[str, object]:

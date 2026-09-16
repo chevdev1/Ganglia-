@@ -24,7 +24,8 @@ def test_software_reply_mentions_scenario() -> None:
     )
     assert "grandmother" in draft.text.lower() or "hummed" in draft.text.lower()
     assert draft.writer == "software"
-    assert "table" in draft.text.lower() or "room" in draft.text.lower() or "node" in draft.text.lower()
+    assert "node" in draft.text.lower() or "noted" in draft.text.lower()
+    assert "louder together" not in draft.text.lower()
     assert draft.focus >= 1
     assert draft.restlessness >= 1
 

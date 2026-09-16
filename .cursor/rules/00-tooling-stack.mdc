@@ -1,0 +1,24 @@
+﻿---
+description: Mandatory token/context stack for every project (token-optimizer, paritok, cursorrules)
+alwaysApply: true
+---
+
+# Mandatory Cursor Tooling Stack
+
+Always follow this stack for current and future projects in this workspace.
+
+## Active tools
+1. **token-optimizer** — personal skill at `~/.cursor/skills/token-optimizer` (also token-coach, token-dashboard, fleet-auditor, resume-checkpoint). Prefer compact context, avoid redundant reads, use measure/doctor when optimizing tokens.
+2. **awesome-cursorrules** — library at `~/.cursor/tooling/awesome-cursorrules`. Project rules live in `.cursor/rules/`. Prefer matching stack rules over inventing new style guides.
+3. **paritok** — compression gateway at `~/.cursor/tooling/paritok`. When the user routes Cursor/OpenAI through Paritok (`OPENAI_BASE_URL=http://127.0.0.1:8080`), keep prompts lean and do not expand compressed `[REF:…]` blobs unless needed.
+
+## Hard requirements
+- Keep changes scoped; do not over-engineer.
+- Prefer existing project patterns over rewriting architecture.
+- Do not dump entire rule libraries into context — use the curated `.cursor/rules` files.
+- When creating a **new project**, copy rules from `~/.cursor/tooling/project-rules-template/rules` into that project's `.cursor/rules/` and keep this alwaysApply rule.
+- Do not commit secrets (`.env`, tokens, credentials).
+- On Windows, native Token Optimizer Cursor hooks may be unavailable; still follow the skill guidance manually.
+
+## Python projects
+Follow the Python rules already present in `.cursor/rules/` (typing, pytest, Ruff/PEP8, modular layout).

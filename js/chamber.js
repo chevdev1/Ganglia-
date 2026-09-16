@@ -134,7 +134,7 @@ function renderTraces(traces){
   traces.forEach(t=>{
     const card=document.createElement('article'); card.className='thought';
     const when=t.created_at?new Date(t.created_at).toTimeString().slice(0,5):'';
-    card.innerHTML=`<div class="meta"><span class="tag acc">${t.trigger}</span><span>${when}</span><button type="button" class="speak">speak</button></div>
+    card.innerHTML=`<div class="meta"><span class="tag acc">${t.trigger}</span><span>${when}</span><span class="tag">${t.writer||'?'}</span><button type="button" class="speak">speak</button></div>
       ${t.scenario?`<div class="scn"></div>`:''}<p></p>`;
     if(t.scenario) card.querySelector('.scn').textContent=t.scenario;
     card.querySelector('p').textContent=t.text;

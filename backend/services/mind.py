@@ -198,13 +198,18 @@ class MindRuntime:
         )
         return persist_thought(session, trigger="claim", node_id=node_id, scenario=None, draft=draft, features=features)
 
-    async def _autonomous(self, session: Session) -> Output:
+    async def _autonomous(self, session: Session) -> Output | None:
         """Continue the monologue without a new user scenario."""
 
         memory = session.get(MemoryState, 1)
         assert memory is not None
+        last = session.scalar(select(Output).order_by(Output.id.desc()).limit(1))
+        if last is not None and last.trigger_type == "autonomous":
+            age = (datetime.now(timezone.utc) - last.created_at.replace(tzinfo=timezone.utc)).total_seconds()
+            if age < max(30, self.settings.autonomous_seconds):
+                return None
         last_scenario = session.scalar(select(Scenario).order_by(Scenario.id.desc()).limit(1))
-        features = self.neural.observe(f"auto:{memory.cycle}")
+        features = self.neural.observe(f"auto:{memory.cycle}:{memory.unresolved_thought}")
         draft = await _write(
             self.writer,
             trigger="autonomous",
@@ -221,6 +226,8 @@ class MindRuntime:
             unresolved_thought=memory.unresolved_thought or "",
             features=features,
         )
+        if last is not None and draft.text.strip() == (last.text or "").strip():
+            return None
         return persist_thought(session, trigger="autonomous", node_id=None, scenario=None, draft=draft, features=features)
 
 

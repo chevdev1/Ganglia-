@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
 
 GROQ_BASE = "https://api.groq.com/openai/v1"
-GROQ_MODEL = "openai/gpt-oss-20b"
+GROQ_MODEL = "openai/gpt-oss-120b"
 
 
 class Settings(BaseSettings):
