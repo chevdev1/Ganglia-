@@ -422,13 +422,14 @@ if(soundBtn) soundBtn.onclick=()=>{
 updateSoundBtn();
 
 /* ambient can only start inside a real user gesture (browser autoplay rules) —
-   arm it on the first click/key/touch/scroll after load, if sound is enabled */
+   arm it on the first click/key/touch after load (scroll does NOT count as a
+   user gesture in browsers, so it's deliberately excluded here) */
 if(soundOn){
   const armAmbient=()=>{
     startAmbient();
-    ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>removeEventListener(ev,armAmbient));
+    ['pointerdown','keydown','touchstart'].forEach(ev=>removeEventListener(ev,armAmbient));
   };
-  ['pointerdown','keydown','touchstart','scroll'].forEach(ev=>addEventListener(ev,armAmbient,{passive:true}));
+  ['pointerdown','keydown','touchstart'].forEach(ev=>addEventListener(ev,armAmbient,{passive:true}));
 }
 
 function seededRandom(seed){

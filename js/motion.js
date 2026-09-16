@@ -210,61 +210,70 @@ function themeWipe(applyTheme, {duration=400}={}){
   }, stepDur);
 }
 
-/* ambient: minimal procedural night-pixel pad, synthesised with WebAudio, no audio files */
+/* ambient: minimal procedural night-pixel ambience, synthesised with WebAudio, no audio files.
+   Warm single-root drone + a consonant fifth + a slow pentatonic arpeggio, all lowpass-filtered
+   to stay soft. startAmbient() is safe to call repeatedly: it always retries ac.resume() (needed
+   because audio can only truly start inside a real user gesture — click/key/touch, not scroll). */
 let _ambientCtx=null, _ambientNodes=null, _ambientTimer=null, _ambientOn=false;
 function startAmbient(){
-  if (_ambientOn) return;
-  _ambientOn=true;
   _ambientCtx = _ambientCtx || new (window.AudioContext||window.webkitAudioContext)();
   const ac=_ambientCtx;
-  if (ac.state==='suspended') ac.resume().catch(()=>{});
+  if (ac.state!=='running') ac.resume().catch(()=>{});
+  if (_ambientOn) return;
+  _ambientOn=true;
 
   const master=ac.createGain();
   master.gain.value=0;
-  master.connect(ac.destination);
-  master.gain.linearRampToValueAtTime(0.045, ac.currentTime+3);
+  const warmth=ac.createBiquadFilter();
+  warmth.type='lowpass'; warmth.frequency.value=2200; warmth.Q.value=0.3;
+  master.connect(warmth); warmth.connect(ac.destination);
+  master.gain.linearRampToValueAtTime(0.05, ac.currentTime+3);
 
-  const scale=[110.00,130.81,146.83,164.81,196.00]; // low, moody, pentatonic-ish
-  const drones=scale.slice(0,3).map((freq,i)=>{
-    const o=ac.createOscillator();
-    o.type='sine'; o.frequency.value=freq; o.detune.value=(i-1)*4;
-    const g=ac.createGain(); g.gain.value=0.5;
-    const lfo=ac.createOscillator(); lfo.frequency.value=0.05+i*0.02;
-    const lfoGain=ac.createGain(); lfoGain.gain.value=0.25;
-    lfo.connect(lfoGain); lfoGain.connect(g.gain);
-    o.connect(g); g.connect(master);
-    o.start(); lfo.start();
-    return {o,lfo};
-  });
+  const root=65.41; // C2, warm and low
+  const bass=ac.createOscillator(); bass.type='sine'; bass.frequency.value=root;
+  const bassGain=ac.createGain(); bassGain.gain.value=0.4;
+  const bassLfo=ac.createOscillator(); bassLfo.frequency.value=0.06;
+  const bassLfoGain=ac.createGain(); bassLfoGain.gain.value=0.15;
+  bassLfo.connect(bassLfoGain); bassLfoGain.connect(bassGain.gain);
+  bass.connect(bassGain); bassGain.connect(master);
+  bass.start(); bassLfo.start();
 
-  function ping(){
+  const fifth=ac.createOscillator(); fifth.type='sine'; fifth.frequency.value=root*1.5; // perfect fifth, consonant
+  const fifthGain=ac.createGain(); fifthGain.gain.value=0.1;
+  fifth.connect(fifthGain); fifthGain.connect(master);
+  fifth.start();
+
+  const scale=[261.63,293.66,329.63,392.00,440.00]; // C major pentatonic, gentle chiptune register
+  let step=0;
+  function pluck(){
     if (!_ambientOn) return;
-    const freq=scale[(Math.random()*scale.length)|0]*2;
-    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=freq;
+    step=(step+1+((Math.random()*2)|0))%scale.length;
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=scale[step];
+    const filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1400;
     const g=ac.createGain(); g.gain.value=0;
-    o.connect(g);
+    o.connect(filt); filt.connect(g);
     if (ac.createStereoPanner){
-      const pan=ac.createStereoPanner(); pan.pan.value=Math.random()*2-1;
+      const pan=ac.createStereoPanner(); pan.pan.value=Math.random()*1.2-0.6;
       g.connect(pan); pan.connect(master);
     } else g.connect(master);
     const t=ac.currentTime;
-    g.gain.linearRampToValueAtTime(0.06, t+0.08);
-    g.gain.exponentialRampToValueAtTime(0.0001, t+2.2);
-    o.start(t); o.stop(t+2.3);
-    _ambientTimer=setTimeout(ping, 4000+Math.random()*6000);
+    g.gain.linearRampToValueAtTime(0.05, t+0.15);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+3.2);
+    o.start(t); o.stop(t+3.3);
+    _ambientTimer=setTimeout(pluck, 2600+Math.random()*3200);
   }
-  _ambientTimer=setTimeout(ping, 3000+Math.random()*3000);
-  _ambientNodes={master, drones};
+  _ambientTimer=setTimeout(pluck, 2200+Math.random()*2000);
+  _ambientNodes={master, bass, bassLfo, fifth};
 }
 function stopAmbient(){
   if (!_ambientOn) return;
   _ambientOn=false;
   clearTimeout(_ambientTimer);
   if (_ambientNodes){
-    const {master, drones}=_ambientNodes, ac=_ambientCtx;
+    const {master, bass, bassLfo, fifth}=_ambientNodes, ac=_ambientCtx;
     master.gain.cancelScheduledValues(ac.currentTime);
     master.gain.linearRampToValueAtTime(0, ac.currentTime+1.2);
-    setTimeout(()=>{ drones.forEach(d=>{ try{d.o.stop(); d.lfo.stop();}catch(_e){} }); }, 1300);
+    setTimeout(()=>{ [bass,bassLfo,fifth].forEach(n=>{ try{n.stop();}catch(_e){} }); }, 1300);
   }
   _ambientNodes=null;
 }
