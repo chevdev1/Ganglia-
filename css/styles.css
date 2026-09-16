@@ -94,6 +94,16 @@ h1{font-family:var(--px);font-weight:400;font-size:clamp(44px,7vw,88px);line-hei
 .hud{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--dim);pointer-events:none}
 #hudtip{position:absolute;left:14px;top:34px;font-size:12px;background:var(--fg);color:var(--bg);padding:2px 8px;pointer-events:none;white-space:pre}
 .mind-foot{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:12px 16px;font-size:13px;color:var(--dim)}
+.lotcard{position:absolute;z-index:4;width:78px;border:1px solid var(--fg);background:var(--bg);pointer-events:none;padding:6px;transform:translate(-50%,-110%);box-shadow:0 0 0 1px var(--bg)}
+.lotcard-id{font-family:var(--px);font-size:12px;letter-spacing:.04em}
+.lotcard-meta{font-size:10px;color:var(--dim);margin-top:2px;text-transform:uppercase}
+.lotcard-price{margin-top:6px;padding-top:4px;border-top:1px solid var(--line);font-family:var(--px);font-size:11px;color:var(--acc)}
+.lotbuy{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-top:1px solid var(--line);padding:12px 16px;background:var(--bg)}
+.lotbuy-info{flex:1;min-width:140px}
+.lotbuy-info strong{display:block;font-family:var(--px);font-size:18px;letter-spacing:.04em}
+.lotbuy-info span{display:block;margin-top:2px;font-size:12px;color:var(--dim)}
+.lotbuy-price{font-family:var(--px);font-size:14px;color:var(--acc);white-space:nowrap}
+.lotbuy .btn{min-width:120px}
 .live{display:inline-flex;align-items:center;gap:8px;color:var(--fg)}
 .live i{width:8px;height:8px;background:var(--acc);animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}

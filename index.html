@@ -57,7 +57,20 @@
       <canvas id="mindcv" tabindex="0" aria-label="Rotatable pixel brain with 128 nodes. Drag or use arrow keys to rotate, click a node to send the probe."></canvas>
       <div class="hud"><span>drag to rotate, click a node</span><span id="hudprobe">probe parked</span></div>
       <div id="hudtip" hidden></div>
+      <div id="lotcard" class="lotcard" hidden aria-hidden="true">
+        <div class="lotcard-id">#000</div>
+        <div class="lotcard-meta">free</div>
+        <div class="lotcard-price">—</div>
+      </div>
       <div class="states" id="states"></div>
+      <div class="lotbuy" id="lotbuy">
+        <div class="lotbuy-info">
+          <strong id="lotbuy-id">—</strong>
+          <span id="lotbuy-meta">Click a node on the brain</span>
+        </div>
+        <div class="lotbuy-price" id="lotbuy-price"></div>
+        <button class="btn" id="lotbuy-btn" type="button" disabled>Buy</button>
+      </div>
       <div class="mind-foot">
         <span class="live"><i></i><span id="status">thinking</span></span>
         <span>cycle <span id="cycle">0</span></span>

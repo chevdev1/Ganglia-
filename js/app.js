@@ -14,8 +14,74 @@ const seen=new Set();
 const grid=document.getElementById('grid'), panel=document.getElementById('panel');
 const feed=document.getElementById('feed');
 const scn=document.getElementById('scn'), send=document.getElementById('send');
+const lotcard=document.getElementById('lotcard');
+const lotbuyId=document.getElementById('lotbuy-id');
+const lotbuyMeta=document.getElementById('lotbuy-meta');
+const lotbuyPrice=document.getElementById('lotbuy-price');
+const lotbuyBtn=document.getElementById('lotbuy-btn');
 const pad=n=>'#'+String(n).padStart(3,'0');
 const short=a=>a&&a.length>12?a.slice(0,6)+'…'+a.slice(-4):a||'';
+
+/** Deterministic seat price for display (claim itself stays wallet-bound). */
+function lotPrice(i){
+  const region=Math.floor(i/16)%8;
+  const base=[25,40,55,70,35,45,60,30][region];
+  return base+(i%8)*5;
+}
+
+function lotStatus(i){
+  if(i===mine) return 'yours';
+  if(owners[i]) return 'claimed';
+  return 'free';
+}
+
+function renderLotBuy(){
+  if(!lotbuyId) return;
+  if(selected===null){
+    lotbuyId.textContent='—';
+    lotbuyMeta.textContent='Click a node on the brain';
+    lotbuyPrice.textContent='';
+    if(lotbuyBtn){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Buy'; }
+    if(lotcard) lotcard.hidden=true;
+    return;
+  }
+  const i=selected;
+  const st=lotStatus(i);
+  const price=lotPrice(i);
+  const region=labels[Math.floor(i/16)];
+  lotbuyId.textContent=pad(i);
+  lotbuyMeta.textContent=`${region} · ${st}`;
+  lotbuyPrice.textContent=`${price} GNGL`;
+  if(lotbuyBtn){
+    if(st==='yours'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Yours'; }
+    else if(st==='claimed'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Sold'; }
+    else {
+      lotbuyBtn.disabled=false;
+      lotbuyBtn.textContent=connected?'Buy':'Connect & buy';
+    }
+  }
+  if(lotcard){
+    lotcard.querySelector('.lotcard-id').textContent=pad(i);
+    lotcard.querySelector('.lotcard-meta').textContent=st;
+    lotcard.querySelector('.lotcard-price').textContent=price+' GNGL';
+  }
+}
+
+/** Position floating lot square next to the probe tip (canvas → CSS %). */
+function syncLotCard(nodeId, sx, sy){
+  if(!lotcard) return;
+  if(nodeId===null||nodeId===undefined||selected===null){ lotcard.hidden=true; return; }
+  if(nodeId!==selected){ /* still show selected lot near probe if probing same */ }
+  const showId=nodeId;
+  const st=lotStatus(showId);
+  lotcard.querySelector('.lotcard-id').textContent=pad(showId);
+  lotcard.querySelector('.lotcard-meta').textContent=st;
+  lotcard.querySelector('.lotcard-price').textContent=lotPrice(showId)+' GNGL';
+  lotcard.hidden=false;
+  lotcard.style.left=(sx/320*100)+'%';
+  lotcard.style.top=(sy/240*100)+'%';
+}
+window.syncLotCard=syncLotCard;
 
 function renderStates(){
   const keys=['curiosity','intensity','warmth'];
@@ -97,7 +163,11 @@ function renderGrid(){
 }
 
 function renderPanel(){
-  if(selected===null){ panel.innerHTML=`<div class="id">—</div><p class="note" style="font-size:14px">Select a node on the map to see who holds it, or claim a free one.</p>`; return; }
+  if(selected===null){
+    panel.innerHTML=`<div class="id">—</div><p class="note" style="font-size:14px">Select a node on the brain or map. Buy only from the bar under the mind.</p>`;
+    renderLotBuy();
+    return;
+  }
   const i=selected,o=owners[i], alias=window.nodeAliases&&window.nodeAliases[i];
   const status=i===mine?'Yours':o?'Claimed':'Free';
   const who=i===mine?(window.myAlias||short(address)): (alias||o||'nobody yet');
@@ -360,6 +430,8 @@ async function claimNode(){
     renderPanel();
   }
 }
+
+if(lotbuyBtn) lotbuyBtn.onclick=()=>{ claimNode(); };
 
 scn.oninput=()=>{ document.getElementById('chars').textContent=`${scn.value.length} / 280`; send.disabled=!scn.value.trim()||mine===null; };
 

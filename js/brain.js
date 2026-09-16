@@ -185,6 +185,9 @@ const brain=(()=>{
       // head + cable
       sq(Math.round(B[0])-3,Math.round(B[1])-3,7,fg); sq(Math.round(B[0])-1,Math.round(B[1])-1,3,(frameN>>5)%2?acc:bg);
       const cab=[topW[0]+n.nx*.3,topW[1]+n.ny*.3+.25,topW[2]+n.nz*.3]; proj(...cab,tmp); line(B,tmp,dim,true,false);
+      if(typeof window.syncLotCard==='function') window.syncLotCard(probe.node, B[0], B[1]);
+    } else if(typeof window.syncLotCard==='function') {
+      window.syncLotCard(null, 0, 0);
     }
     g.putImageData(img,0,0);
     requestAnimationFrame(frame);
