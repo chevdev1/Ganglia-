@@ -189,9 +189,20 @@ textarea:focus{outline:none;border-color:var(--acc)}
 .thought .scn{color:var(--dim);font-size:13px;margin-bottom:8px;border-left:2px solid var(--acc);padding-left:10px}
 .caret::after{content:"";display:inline-block;width:8px;height:15px;background:var(--acc);margin-left:3px;vertical-align:-2px;animation:blink .8s steps(2) infinite}
 
-footer{border-top:1px solid var(--line);padding:40px 0 56px;color:var(--dim);font-size:13px}
-footer .wrap{display:grid;grid-template-columns:1fr 1fr;gap:32px}
-footer p{margin:0;max-width:60ch}
+footer{border-top:1px solid var(--line);padding:56px 0 0;color:var(--dim);font-size:13px;overflow:hidden}
+footer p{margin:0 0 12px;max-width:60ch}
+.foot-top{display:grid;grid-template-columns:1fr 2fr;gap:40px;margin-bottom:40px;padding-bottom:40px;border-bottom:1px solid var(--line)}
+.foot-brand .brand{margin-bottom:10px}
+.footlogo{width:26px;height:26px;image-rendering:pixelated}
+.foot-tag{max-width:32ch;font-size:13px;color:var(--dim);margin:0}
+.foot-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.foot-h{font-family:var(--px);font-size:12px;color:var(--fg);letter-spacing:.08em;text-transform:uppercase;margin:0 0 14px}
+.foot-col{display:flex;flex-direction:column;gap:10px}
+.foot-col a{color:var(--dim);text-decoration:none;font-size:13px;transition:color var(--d-1) var(--ease-out)}
+.foot-col a:hover{color:var(--fg)}
+.soc-soon{background:none;border:0;padding:0;text-align:left;font:13px var(--mono);color:var(--dim);opacity:.5;cursor:default;display:flex;align-items:center;gap:6px}
+.soc-soon i{font-style:normal;font-size:10px;border:1px solid var(--line);padding:1px 5px;letter-spacing:.04em}
+.foot-wordmark{font-family:var(--px);font-size:clamp(64px,14vw,180px);line-height:.85;color:var(--fg);opacity:.06;white-space:nowrap;margin:24px -4px -10px;user-select:none;letter-spacing:-.02em}
 
 /* docs page */
 .docshero{padding:56px 0 40px}
@@ -320,6 +331,9 @@ footer p{margin:0;max-width:60ch}
   .trust-card{border-right:0!important;border-bottom:1px solid var(--line)}
   .trust-card:last-child{border-bottom:0}
   .trust-card:hover{box-shadow:inset 0 -3px 0 var(--acc)}
+  .foot-top{grid-template-columns:1fr;gap:28px}
+  .foot-cols{grid-template-columns:repeat(2,1fr);gap:24px 16px}
+  .foot-wordmark{font-size:20vw}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}

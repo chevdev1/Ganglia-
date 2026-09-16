@@ -26,14 +26,16 @@ dirs.forEach(([dx,dy],i)=>{
 });
 ['11,10','12,10','11,11','12,11'].forEach(e=>{G.delete(e);EYE.add(e)});
 
-// header logo
-const logo=document.getElementById('logo');
+// pixel logo mark, drawn into every element carrying id="logo" or class="pixellogo"
+// (header nav + footer brand)
 function drawLogo(){
-  if(!logo) return;
-  logo.innerHTML='';
-  G.forEach(s=>{const [x,y]=s.split(',');const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
-    r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',1);r.setAttribute('height',1);
-    r.setAttribute('fill', NODES[1].includes(s)?css('--acc'):css('--fg'));     logo.appendChild(r);});
+  const marks=[...document.querySelectorAll('#logo, .pixellogo')];
+  marks.forEach(logo=>{
+    logo.innerHTML='';
+    G.forEach(s=>{const [x,y]=s.split(',');const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',1);r.setAttribute('height',1);
+      r.setAttribute('fill', NODES[1].includes(s)?css('--acc'):css('--fg')); logo.appendChild(r);});
+  });
 }
 
 function openSeat(){

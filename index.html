@@ -179,8 +179,36 @@
 
 <footer>
   <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand">
+        <a class="brand" href="#top" aria-label="Ganglia home"><svg class="footlogo pixellogo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
+        <p class="foot-tag">One shared character. 128 nodes. No token, no investment.</p>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <p class="foot-h">Product</p>
+          <a href="#mind">Mind</a>
+          <a href="#nodes">Nodes</a>
+          <a href="#archive">Archive</a>
+          <a href="/docs.html">Docs</a>
+        </div>
+        <div class="foot-col">
+          <p class="foot-h">Community</p>
+          <a href="https://github.com/chevdev1/Ganglia-" target="_blank" rel="noopener">GitHub ↗</a>
+          <button type="button" class="soc-soon" disabled aria-label="X, not live yet">X<i>soon</i></button>
+          <button type="button" class="soc-soon" disabled aria-label="Discord, not live yet">Discord<i>soon</i></button>
+          <button type="button" class="soc-soon" disabled aria-label="Telegram, not live yet">Telegram<i>soon</i></button>
+        </div>
+        <div class="foot-col">
+          <p class="foot-h">Trust</p>
+          <a href="#trust">What's real</a>
+          <a href="/docs.html#faq">FAQ</a>
+        </div>
+      </div>
+    </div>
     <p>Ganglia's words are written by software — a language model when a key is configured, otherwise a local writer. Shared memory is real and public. Signals shown here are software-generated. A node is a right to send scenarios, not a share of anything and not living tissue.</p>
     <p>No live token. No lab connection. English voice.<br>A node is a seat in a character, not an investment.</p>
+    <div class="foot-wordmark" aria-hidden="true">GANGLIA</div>
   </div>
 </footer>
 
@@ -245,6 +273,17 @@ if (!reduce) {
   if (trustSection) onEnterView(trustSection, ()=>{
     trustItems.forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
   });
+
+  const footCols = document.querySelectorAll('.foot-col');
+  footCols.forEach((el,i)=>{
+    el.style.opacity='0'; el.style.transform='translateY(8px)';
+    el.style.transition=`opacity var(--d-3) var(--ease-out), transform var(--d-3) var(--ease-out)`;
+    el.style.transitionDelay=(i*80)+'ms';
+  });
+  const footTop = document.querySelector('.foot-top');
+  if (footTop) onEnterView(footTop, ()=>{
+    footCols.forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
+  }, {threshold:0.1});
 }
 
 /* header: hide on scroll down, show on scroll up, reading-progress bar */
