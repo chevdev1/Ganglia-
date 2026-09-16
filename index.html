@@ -73,9 +73,24 @@
       <h2>How it works</h2>
       <p class="sub">Three steps. You claim a node once, then send as many scenarios as you like.</p>
       <div class="ritual">
-        <div class="step"><div class="n">1</div><h3>Claim</h3><p>Pick a free node. One owner per node, one node per identity. It stays yours.</p></div>
-        <div class="step"><div class="n">2</div><h3>Send</h3><p>Give it a memory, a question or a situation it has never seen. Scenarios are public.</p></div>
-        <div class="step"><div class="n">3</div><h3>Watch</h3><p>Your input joins the shared memory. The next thought, its voice and its form all shift.</p></div>
+        <div class="step">
+          <div class="step-top"><div class="n">1</div>
+            <div class="nodemark" aria-hidden="true"><i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i></div>
+          </div>
+          <h3>Claim</h3><p>Pick a free node. One owner per node, one node per identity. It stays yours.</p>
+        </div>
+        <div class="step">
+          <div class="step-top"><div class="n">2</div>
+            <div class="nodemark" aria-hidden="true"><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i></div>
+          </div>
+          <h3>Send</h3><p>Give it a memory, a question or a situation it has never seen. Scenarios are public.</p>
+        </div>
+        <div class="step">
+          <div class="step-top"><div class="n">3</div>
+            <div class="nodemark" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+          </div>
+          <h3>Watch</h3><p>Your input joins the shared memory. The next thought, its voice and its form all shift.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -126,12 +141,24 @@
     <div class="wrap">
       <h2>What's real here</h2>
       <p class="sub">No hype, just the mechanics.</p>
-      <dl class="glossary">
-        <div><dt>No token</dt><dd>Claiming costs a wallet signature. No $GNGL, no burn, no fee.</dd></div>
-        <div><dt>Moderation</dt><dd>A steward can hide a thought that breaks the constitution. Nothing is silently deleted.</dd></div>
-        <div><dt>Writer, shown</dt><dd><code>writer: model</code> or <code>writer: software</code> is always visible on every thought — never hidden.</dd></div>
-        <div><dt>Ownership</dt><dd>A node is a seat, not a share. It can't be sold or transferred.</dd></div>
-      </dl>
+      <div class="trust-grid">
+        <div class="trust-card">
+          <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i></i></div><h3>No token</h3></div>
+          <p>Claiming costs a wallet signature. No $GNGL, no burn, no fee.</p>
+        </div>
+        <div class="trust-card">
+          <div class="card-top"><div class="nodemark" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><h3>Moderation</h3></div>
+          <p>A steward can hide a thought that breaks the constitution. Nothing is silently deleted.</p>
+        </div>
+        <div class="trust-card">
+          <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><h3>Writer, shown</h3></div>
+          <p><code>writer: model</code> or <code>writer: software</code> is always visible on every thought — never hidden.</p>
+        </div>
+        <div class="trust-card">
+          <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i></div><h3>Ownership</h3></div>
+          <p>A node is a seat, not a share. It can't be sold or transferred.</p>
+        </div>
+      </div>
       <p class="sub" style="margin:24px 0 0"><a href="docs.html#faq">Read the full FAQ and status in the docs →</a></p>
     </div>
   </section>
@@ -186,13 +213,29 @@ if (!reduce) {
   });
   const ritual = document.querySelector('.ritual');
   if (ritual) onEnterView(ritual, ()=>{
-    ritual.querySelectorAll('.step').forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
+    const steps=[...ritual.querySelectorAll('.step')];
+    steps.forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
+    /* guided highlight sweep: 1 -> 2 -> 3, once, so the process reads as a sequence
+       before plain :hover takes over for the rest of the visit */
+    setTimeout(()=>{
+      let i=0;
+      (function sweep(){
+        if (i>=steps.length) return;
+        steps.forEach(s=>s.classList.remove('active'));
+        steps[i].classList.add('active');
+        const num=steps[i].querySelector('.n');
+        if (num) scramble(num, {duration:220});
+        i++;
+        setTimeout(sweep, 650);
+      })();
+      setTimeout(()=>steps.forEach(s=>s.classList.remove('active')), steps.length*650+200);
+    }, steps.length*100 + 480);
   });
 
   const ctaClaim = document.getElementById('ctaClaim');
   if (ctaClaim) magnetic(ctaClaim, {max:5});
 
-  const trustItems = document.querySelectorAll('#trust .glossary > div');
+  const trustItems = document.querySelectorAll('#trust .trust-card');
   trustItems.forEach((el,i)=>{
     el.style.opacity='0'; el.style.transform='translateY(10px)';
     el.style.transition=`opacity var(--d-3) var(--ease-out), transform var(--d-3) var(--ease-out)`;

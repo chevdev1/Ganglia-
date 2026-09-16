@@ -109,11 +109,21 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .sub{color:var(--dim);max-width:60ch;margin:0 0 40px}
 
 .ritual{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line)}
-.step{padding:28px;border-right:1px solid var(--line)}
+.step{padding:28px;border-right:1px solid var(--line);transition:box-shadow var(--d-2) var(--ease-out)}
 .step:last-child{border-right:0}
-.step .n{font-family:var(--px);font-size:48px;line-height:1;color:var(--acc)}
+.step:hover,.step.active{box-shadow:inset 0 -3px 0 var(--acc)}
+.step-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.step .n{font-family:var(--px);font-size:48px;line-height:1;color:var(--dim);transition:color var(--d-2) var(--ease-out)}
+.step:hover .n,.step.active .n{color:var(--acc)}
 .step h3{font-family:var(--px);font-weight:400;font-size:20px;margin:18px 0 8px}
 .step p{margin:0;color:var(--dim);font-size:14px}
+
+/* pixel node-cluster mark: a small deterministic 3x3 identicon-style glyph, reused as a
+   decorative "signature" across step/trust cards instead of bespoke icon art */
+.nodemark{display:grid;grid-template-columns:repeat(3,6px);grid-template-rows:repeat(3,6px);gap:2px;flex:none;margin-top:4px}
+.nodemark i{background:var(--cell)}
+.nodemark i.on{background:var(--dim);transition:background var(--d-2) var(--ease-out)}
+.step:hover .nodemark i.on,.step.active .nodemark i.on{background:var(--acc)}
 
 /* node grid */
 .nodes{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start}
@@ -200,6 +210,19 @@ footer p{margin:0;max-width:60ch}
 .glossary div{border-left:2px solid var(--acc);padding-left:14px}
 .glossary dt{font-family:var(--px);font-size:15px;margin:0 0 4px}
 .glossary dd{margin:0;color:var(--dim);font-size:14px;max-width:60ch}
+
+/* trust cards: 2x2 grid, each with a pixel node-mark instead of a plain bullet */
+.trust-grid{display:grid;grid-template-columns:repeat(2,1fr);border:1px solid var(--line);margin-top:8px}
+.trust-card{padding:24px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);transition:box-shadow var(--d-2) var(--ease-out)}
+.trust-card:nth-child(2n){border-right:0}
+.trust-card:nth-last-child(-n+2){border-bottom:0}
+.trust-card:hover{box-shadow:inset 3px 0 0 var(--acc)}
+.trust-card:hover .nodemark i.on{background:var(--acc)}
+.card-top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.card-top .nodemark{margin-top:0}
+.card-top h3{font-family:var(--px);font-weight:400;font-size:15px;margin:0}
+.trust-card p{margin:0;color:var(--dim);font-size:14px}
+.trust-card code{font-size:13px}
 .steps-doc{display:grid;gap:0;border:1px solid var(--line);margin-top:8px}
 .steps-doc li{list-style:none;display:flex;gap:18px;padding:20px 22px;border-top:1px solid var(--line)}
 .steps-doc li:first-child{border-top:0}
@@ -293,6 +316,10 @@ footer p{margin:0;max-width:60ch}
   .grid{grid-template-columns:repeat(16,minmax(14px,1fr));min-width:0;gap:2px}
   .sheet-card{padding:22px 16px 18px;width:min(440px,calc(100vw - 32px))}
   .wallet-sheet-card{padding:22px 16px 18px}
+  .trust-grid{grid-template-columns:1fr}
+  .trust-card{border-right:0!important;border-bottom:1px solid var(--line)}
+  .trust-card:last-child{border-bottom:0}
+  .trust-card:hover{box-shadow:inset 0 -3px 0 var(--acc)}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation:none!important;transition:none!important}
