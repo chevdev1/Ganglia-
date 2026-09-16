@@ -51,7 +51,7 @@ function renderLotBuy(){
   const region=labels[Math.floor(i/16)];
   lotbuyId.textContent=pad(i);
   lotbuyMeta.textContent=`${region} · ${st}`;
-  lotbuyPrice.textContent=`${price} GNGL`;
+  lotbuyPrice.textContent=`${price} GNGL (soon)`;
   if(lotbuyBtn){
     if(st==='yours'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Yours'; }
     else if(st==='claimed'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Sold'; }
@@ -63,7 +63,7 @@ function renderLotBuy(){
   if(lotcard){
     lotcard.querySelector('.lotcard-id').textContent=pad(i);
     lotcard.querySelector('.lotcard-meta').textContent=st;
-    lotcard.querySelector('.lotcard-price').textContent=price+' GNGL';
+    lotcard.querySelector('.lotcard-price').textContent=price+' GNGL (soon)';
   }
 }
 
@@ -76,7 +76,7 @@ function syncLotCard(nodeId, sx, sy){
   const st=lotStatus(showId);
   lotcard.querySelector('.lotcard-id').textContent=pad(showId);
   lotcard.querySelector('.lotcard-meta').textContent=st;
-  lotcard.querySelector('.lotcard-price').textContent=lotPrice(showId)+' GNGL';
+  lotcard.querySelector('.lotcard-price').textContent=lotPrice(showId)+' GNGL (soon)';
   lotcard.hidden=false;
   lotcard.style.left=(sx/320*100)+'%';
   lotcard.style.top=(sy/240*100)+'%';
