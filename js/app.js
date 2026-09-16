@@ -89,6 +89,7 @@ function renderGrid(){
     b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'');
     b.setAttribute('aria-label',`Node ${i}, ${i===mine?'yours':o?'claimed':'free'}`);
     b.dataset.i=i; b.onclick=()=>{selected=i;renderGrid();renderPanel();brain.target(i);};
+    b.onmouseenter=()=>brain.target(i);
     grid.appendChild(b);
   });
   const taken=owners.filter(Boolean).length;
@@ -200,30 +201,47 @@ function speakThought(t){
   speak(t.text);
 }
 
-function renderThought(t, animate){
+function deltaChip(label, cur, prevVal){
+  if(prevVal==null||cur==null) return '';
+  const d=cur-prevVal;
+  if(!d) return '';
+  return `<span class="tag${d>0?' acc':''}">${label} ${d>0?'+':''}${d}</span>`;
+}
+
+function renderThought(t, animate, prev){
   if(seen.has(t.id)) return;
   seen.add(t.id);
   lastThoughtId=Math.max(lastThoughtId,t.id);
-  const el=document.createElement('article'); el.className='thought';
+  const el=document.createElement('article'); el.className='thought'; el.id='t'+t.id;
   const tag=t.trigger==='scenario'?`<span class="tag acc">scenario</span>`: t.trigger==='claim'?`<span class="tag acc">claim</span>`:`<span class="tag">autonomous</span>`;
   const when=t.created_at?new Date(t.created_at).toTimeString().slice(0,5):'';
   const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
-  el.innerHTML=`<div class="meta">${tag}${t.node_id!==null&&t.node_id!==undefined?`<span class="tag">node ${pad(t.node_id)}</span>`:''}<span>${when}</span><span>signal: ${esc(t.signal_source||'software')}</span><span>writer: ${esc(t.writer||'software')}</span><button type="button" class="speak" data-speak="1">speak</button></div>
+  const deltas=prev?[deltaChip('curiosity',t.curiosity,prev.curiosity),deltaChip('intensity',t.intensity,prev.intensity),deltaChip('warmth',t.warmth,prev.warmth)].join(''):'';
+  el.innerHTML=`<div class="meta">${tag}${t.node_id!==null&&t.node_id!==undefined?`<span class="tag">node ${pad(t.node_id)}</span>`:''}<span>${when}</span><span>signal: ${esc(t.signal_source||'software')}</span><span>writer: ${esc(t.writer||'software')}</span><button type="button" class="speak" data-speak="1">speak</button><button type="button" class="speak" data-copy="1">copy link</button></div>
    ${t.scenario?`<div class="scn">${esc(t.scenario)}</div>`:''}<p class="${animate?'caret':''}"></p>
-   <div class="thought-state">curiosity ${t.curiosity} · intensity ${t.intensity} · warmth ${t.warmth} · spikes ${t.spike_count}</div>`;
+   <div class="thought-state">curiosity ${t.curiosity} · intensity ${t.intensity} · warmth ${t.warmth} · spikes ${t.spike_count}${deltas?' '+deltas:''}</div>`;
   const p=el.querySelector('p');
   feed.prepend(el);
-  el.querySelector('.speak').onclick=()=>speakThought(t);
+  el.querySelector('.speak[data-speak]').onclick=()=>speakThought(t);
+  const copyBtn=el.querySelector('.speak[data-copy]');
+  copyBtn.onclick=()=>{
+    const url=location.href.split('#')[0]+'#t'+t.id;
+    navigator.clipboard?.writeText(url).catch(()=>{});
+    const orig=copyBtn.textContent; copyBtn.textContent='copied';
+    setTimeout(()=>{ copyBtn.textContent=orig; },1200);
+  };
   if(!animate||reduce){ p.textContent=t.text; p.classList.remove('caret'); return; }
   document.getElementById('status').textContent='writing';
   let i=0;
   const tick=setInterval(()=>{ p.textContent=t.text.slice(0,++i); if(i>=t.text.length){ p.classList.remove('caret'); clearInterval(tick); document.getElementById('status').textContent='thinking'; } }, 18);
 }
 
+let lastMeters=null;
 function ingestThoughts(list, animate){
   const fresh=[...list].sort((a,b)=>a.id-b.id).filter(t=>!seen.has(t.id));
   fresh.forEach(t=>{
-    renderThought(t, animate);
+    renderThought(t, animate, lastMeters);
+    lastMeters={curiosity:t.curiosity, intensity:t.intensity, warmth:t.warmth};
     applyMeters(t);
     if(t.node_id!==null&&t.node_id!==undefined){
       if(t.trigger==='scenario'||t.trigger==='claim'){ brain.target(t.node_id, true); const cell=grid.children[t.node_id]; if(cell){ cell.classList.remove('pulse'); void cell.offsetWidth; cell.classList.add('pulse'); } }
