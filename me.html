@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cabinet — Ganglia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-cabinet">
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="/index.html" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
+    <nav aria-label="Main">
+      <a href="/index.html#mind">Mind</a>
+      <a href="/index.html#nodes">Nodes</a>
+      <a href="/index.html#archive">Archive</a>
+      <a href="/index.html#about">How it works</a>
+      <a href="/docs.html">Docs</a>
+    </nav>
+    <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
+    <div class="auth" id="auth">
+      <button class="btn ghost" id="leave" hidden type="button">Leave</button>
+      <span class="btn ghost" id="profile" hidden></span>
+      <button class="btn" id="connect" type="button">Enter browser</button>
+    </div>
+  </div>
+</header>
+<p class="flash" id="flash" hidden></p>
+
+<main id="top">
+  <div class="ground">
+    <div class="wrap cab-hero">
+      <div class="cab-copy">
+        <p class="kicker" id="kicker">cabinet</p>
+        <h1 id="title">the doorway</h1>
+        <p class="lede" id="standing">Enter to open your seat in the shared mind.</p>
+        <p class="cab-meta" id="meta"></p>
+        <div class="cta" id="cta"></div>
+      </div>
+      <div class="sigil-card" id="sigilcard">
+        <canvas id="sigil" width="8" height="8" aria-label="Wallet sigil"></canvas>
+        <p class="sigil-cap" id="sigilcap">unsigned</p>
+        <p class="mind-badge" id="mindbadge">mind · offline</p>
+      </div>
+    </div>
+  </div>
+
+  <section id="claimsec" hidden>
+    <div class="wrap">
+      <h2>Take a seat</h2>
+      <p class="sub">One free square. One owner. The mind answers everyone with the same live model.</p>
+      <p class="err" id="err" hidden></p>
+      <div class="cab-claim">
+        <button class="btn acc" id="takefree">Take a free seat</button>
+        <div class="gridwrap cab-mini"><div class="grid seatgrid" id="seatgrid" role="grid" aria-label="Free seats"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roomsec" hidden>
+    <div class="wrap cab-room">
+      <div>
+        <h2>Speak from here</h2>
+        <div class="composer">
+          <label for="alias">Standing name</label>
+          <input id="alias" maxlength="24" placeholder="shore-walker" autocomplete="off">
+          <div class="row" style="margin-top:12px;margin-bottom:22px">
+            <button class="btn ghost" id="savealias">Keep name</button>
+          </div>
+          <label for="scn">Scenario</label>
+          <textarea id="scn" maxlength="280" placeholder="You wake up in a city where nobody remembers your name. What do you do first?"></textarea>
+          <div class="row" style="margin-top:14px">
+            <span class="chars" id="chars">0 / 280</span>
+            <button class="btn acc" id="send" disabled>Send</button>
+          </div>
+          <p class="cab-note" id="cooldown"></p>
+        </div>
+      </div>
+      <div>
+        <h2>Traces</h2>
+        <p class="sub">What this seat put on the table, and what the mind answered.</p>
+        <div class="feed" id="traces"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="guestsec">
+    <div class="wrap">
+      <p class="err" id="errguest" hidden></p>
+      <div class="cab-enter">
+        <p class="lede" style="margin:0 0 20px">This is your private window. Enter once — the seat stays on this browser key.</p>
+        <button class="btn acc" id="enter">Enter browser</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Cabinet is your standing place. Leave logs out this window. The node stays on the key.</p>
+  </div>
+</footer>
+
+<script src="js/core.js"></script>
+<script src="js/wallet.js"></script>
+<script src="js/chamber.js"></script>
+</body>
+</html>

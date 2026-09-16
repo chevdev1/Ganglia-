@@ -14,22 +14,28 @@
   <div class="wrap bar">
     <a class="brand" href="#top" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
     <nav aria-label="Main">
-      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="docs.html">Docs</a>
+      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="/docs.html">Docs</a>
     </nav>
     <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
-    <button class="btn" id="connect">Connect wallet</button>
+    <div class="auth" id="auth">
+      <button class="btn ghost" id="leave" hidden type="button">Leave</button>
+      <a class="btn ghost" id="profile" href="/me.html" hidden>Cabinet</a>
+      <button class="btn" id="connect" type="button">Enter browser</button>
+    </div>
   </div>
 </header>
+<p class="flash" id="flash" hidden></p>
 
 <main id="top">
   <div class="ground">
   <div class="wrap hero" id="mind">
     <div>
+      <p class="kicker">one shared character</p>
       <h1>One mind.<br>128 nodes.</h1>
-      <p class="lede">Ganglia is a single shared character. <b>128 people hold its nodes.</b> Each node can send it a scenario, and every scenario changes what it thinks, says and looks like, for everyone.</p>
+      <p class="lede">Ganglia is a single shared character in one public room. <b>128 people hold its nodes.</b> Each node can send it a scenario. Every scenario stays on the table, and the next thought has to carry it.</p>
       <div class="cta">
         <a class="btn" href="#nodes" style="text-decoration:none">Claim a node</a>
-        <a class="btn ghost" href="#archive" style="text-decoration:none">Read its thoughts</a>
+        <a class="btn ghost" href="/me.html" style="text-decoration:none">Open cabinet</a>
       </div>
     </div>
     <div class="mind">
@@ -39,8 +45,9 @@
       <div class="states" id="states"></div>
       <div class="mind-foot">
         <span class="live"><i></i><span id="status">thinking</span></span>
-        <span>cycle <span id="cycle">4812</span></span>
-        <span>signal source: software</span>
+        <span>cycle <span id="cycle">0</span></span>
+        <span id="sig">signal source: software</span>
+        <span id="writer">writer: software</span>
       </div>
     </div>
   </div>
@@ -49,9 +56,9 @@
   <section id="about">
     <div class="wrap">
       <h2>How it works</h2>
-      <p class="sub">Three steps. You pay once for the node, then send as many scenarios as you like.</p>
+      <p class="sub">Three steps. You claim a node once, then send as many scenarios as you like.</p>
       <div class="ritual">
-        <div class="step"><div class="n">1</div><h3>Claim</h3><p>Pick a free node and burn 1000 $GNGL. One owner per node, and it stays yours.</p></div>
+        <div class="step"><div class="n">1</div><h3>Claim</h3><p>Pick a free node. One owner per node, one node per identity. It stays yours.</p></div>
         <div class="step"><div class="n">2</div><h3>Send</h3><p>Give it a memory, a question or a situation it has never seen. Scenarios are public.</p></div>
         <div class="step"><div class="n">3</div><h3>Watch</h3><p>Your input joins the shared memory. The next thought, its voice and its form all shift.</p></div>
       </div>
@@ -79,10 +86,10 @@
         <h2>Send a scenario</h2>
         <p class="sub">It reaches the whole mind, not just your node.</p>
         <div class="composer">
-          <div class="locked" id="locked">Claim a node to send scenarios. You can still read everything.</div>
+          <p class="err" id="modelwarn" hidden></p>
           <label for="scn">Your scenario</label>
           <textarea id="scn" maxlength="280" placeholder="You wake up in a city where nobody remembers your name. What do you do first?" disabled></textarea>
-          <div class="warn"><svg viewBox="0 0 7 7" shape-rendering="crispEdges"><path fill="currentColor" d="M3 0h1v1h1v2h1v2h1v2H0V5h1V3h1V1h1zM3 2v2h1V2zM3 5v1h1V5z"/></svg>Everything you send is published in the archive. Do not include names, addresses or anything private.</div>
+          <p class="err" id="err" hidden></p>
           <div class="row"><span class="chars" id="chars">0 / 280</span><button class="btn acc" id="send" disabled>Send scenario</button></div>
         </div>
       </div>
@@ -97,12 +104,13 @@
 
 <footer>
   <div class="wrap">
-    <p>Ganglia's words are written by an AI model, shaped by a shared memory of every scenario. Signals shown here are software-generated. A node is a right to send scenarios, not a share of anything and not living tissue.</p>
-    <p>Contract: 0x0000…0128 (placeholder)<br>Concept prototype, all data simulated.</p>
+    <p>Ganglia's words are written by software — a language model when a key is configured, otherwise a local writer. Shared memory is real and public. Signals shown here are software-generated. A node is a right to send scenarios, not a share of anything and not living tissue.</p>
+    <p>No live token. No lab connection. English voice.<br>A node is a seat in a character, not an investment.</p>
   </div>
 </footer>
 
 <script src="js/core.js"></script>
+<script src="js/wallet.js"></script>
 <script src="js/brain.js"></script>
 <script src="js/app.js"></script>
 </body>

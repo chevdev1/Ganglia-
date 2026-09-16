@@ -1,86 +1,63 @@
 # Ganglia
 
-**One mind. 128 nodes.** Лендинг-концепт общего цифрового персонажа: 128 держателей узлов отправляют ему сценарии, и каждый сценарий меняет то, что он думает, говорит и как выглядит.
+**One mind. 128 nodes.** A shared digital character. 128 seats. One public room. English voice.
 
-> Статус: концепт-прототип. Кошелёк, клеймы, ответы персонажа и сигналы симулированы на фронтенде.
+Speech is written by a language model when a **free Groq key** is set (`GROQ_API_KEY` from https://console.groq.com/keys). No paid OpenAI account. Without a key, a local software writer still uses the real memory.
 
-## Запуск
+## Run locally
 
-Сборки нет, это чистые HTML/CSS/JS.
-
-```bash
-git clone git@github.com:chevdev1/Ganglia-.git
-cd Ganglia-
-python3 -m http.server 8080     # или: npx serve .
-# открыть http://localhost:8080
+```powershell
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+Copy-Item .env.example .env
+# Free LLM: open https://console.groq.com/keys , create a key, put it in GROQ_API_KEY
+# Free WalletConnect QR: https://cloud.reown.com → Project ID → WALLETCONNECT_PROJECT_ID
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8080
 ```
 
-Можно открыть `index.html` двойным кликом, но локальный сервер ближе к продакшену.
+Open http://127.0.0.1:8080
 
-## Структура
+Do not open `index.html` as a file.
 
-```
-index.html            разметка страницы
-css/styles.css        токены цветов, тёмная/светлая тема, вёрстка
-js/core.js            общие хелперы, пиксельный логотип в шапке
-js/brain.js           3D пиксельный мозг: облако точек, 128 узлов, связи, зонд, импульсы
-js/app.js             стейт персонажа, карта узлов, claim, композер сценариев, лента мыслей
-assets/logos/         вариации логотипа (SVG) + общий лист
-assets/social/        аватары и баннер для X (SVG + PNG)
+```powershell
+pytest
+python -m scripts.backup
 ```
 
-Скрипты подключаются как обычные `<script>` без модулей и делят глобальную область видимости. Порядок важен: `core.js` → `brain.js` → `app.js`.
+## Production (Docker)
 
-## Как устроен мозг (`js/brain.js`)
-
-- Рендер в буфер 320×240 через `ImageData`, масштабируется CSS-ом с `image-rendering: pixelated`.
-- ~37k точек поверхности: полушария с бороздами, мозжечок, ствол. Z-buffer, backface culling, свет через дизеринг Байера 4×4.
-- 128 узлов на коре (фибоначчи-распределение, по 64 на полушарие), рёбра к 3 ближайшим соседям.
-- Сигнал: `stimulate(node, generations)` запускает импульсы по рёбрам, каждое поколение затухает.
-- Зонд: фазы `in → hold → on → out`, при выборе узла мозг поворачивается к нему.
-
-Публичный API:
-
-```js
-brain.target(nodeId, fire)   // отправить зонд в узел
-brain.stimulate(nodeId, gen) // запустить волну из узла
-brain.ripple()               // несколько случайных волн
-brain.colors()               // перечитать CSS-токены после смены темы
+```powershell
+docker compose up --build -d
 ```
 
-Основные крутилки: `SC` (масштаб), `W/H` (разрешение пикселей), количество точек в циклах генерации, коэффициенты в `hemiPoint()` (форма и борозды), скорость зонда `sp`.
+SQLite lives in `./data`. Backup: `python -m scripts.backup`.
 
-## Дизайн-токены
+Set in `.env` before shipping:
 
-| Токен | Тёмная | Светлая |
-|---|---|---|
-| `--bg` | `#000000` | `#FFFFFF` |
-| `--fg` | `#F2F2F2` | `#0A0A0A` |
-| `--acc` | `#4D7CFF` | `#3A63F5` |
-| `--cell` | `#161616` | `#EDEDED` |
+- `SECRET_KEY` — random string
+- `ADMIN_TOKEN` — steward page at `/admin.html`
+- `ENV=production` — hides API swagger
+- `GROQ_API_KEY` — free key from https://console.groq.com/keys (no credit card). Turns `writer: software` into `writer: model`
 
-Шрифты: Silkscreen (заголовки, кнопки), Geist Mono (текст), оба из Google Fonts.
+## Product loop
 
-## Что симулировано и что нужно заменить
+1. **Connect** — injected wallet + signature. No random keys.
+2. **Claim** — one free node per wallet. Reconnect keeps it. Repeat sends are free. Nodes are not transferable.
+3. **Send** — public scenario, max 280 characters, PII filtered.
+4. **Watch** — English thought, cached voice, meters, brain, archive. Autonomous thoughts about once a minute.
 
-| На фронте сейчас | В продакшене |
-|---|---|
-| `connect()` ставит фейковый адрес | реальный wallet connect |
-| `claim()` таймаут 1.2 с | approve + burn + регистрация узла в контракте |
-| `owners[]` сид-рандом | чтение ownership из контракта / индексатора |
-| `replies[]`, `auto[]` | ответы LLM + shared memory (summary + last 24) |
-| `signal: software` | provenance сигнала с бэкенда |
+## Lore
 
-Продуктовые правила из ресерча: всегда показывать источник сигнала, не называть узел частью живой ткани или долей, предупреждать о публичности сценариев.
+`CONSTITUTION.md` is the character. `LORE.md` is the short public version. Scenarios colour the next thought. They do not erase the rest, and they do not override the constitution.
 
-## Идеи для доработки
+## Layout
 
-- Мозг на всю ширину главного экрана, текст поверх.
-- Скролл-анимация ввода зонда.
-- Подсветка долей при наведении.
-- Мобильная производительность: адаптивное число точек.
-- Уточнить форму мозжечка.
-
-## Деплой
-
-GitHub Pages: Settings → Pages → Deploy from branch → `main` / root. Также подойдут Vercel или Netlify без настроек.
+```
+CONSTITUTION.md       character bible (also the model system prompt)
+LORE.md               public myth
+DISCLAIMER.md         honesty text
+admin.html            steward hide/restore
+backend/              FastAPI, SQLite, writers, TTS, moderation
+docker-compose.yml    one-container deploy
+```

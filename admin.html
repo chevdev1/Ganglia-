@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Steward — Ganglia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="page-steward">
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="/index.html" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
+    <nav aria-label="Main">
+      <a href="/index.html#mind">Mind</a>
+      <a href="/docs.html">Docs</a>
+      <a href="/admin.html" class="active">Steward</a>
+    </nav>
+    <button class="theme" id="theme" aria-label="Toggle colour theme">◐</button>
+  </div>
+</header>
+
+<main id="top">
+  <div class="wrap steward-gate" id="gate">
+    <p class="kicker">ops console</p>
+    <h1>Steward</h1>
+    <p class="lede">Moderate the public archive, inspect memory weather, and see seat occupancy. This page stays off the main nav.</p>
+    <label for="tok">Admin token</label>
+    <div class="row steward-auth">
+      <input id="tok" type="password" placeholder="ADMIN_TOKEN" autocomplete="current-password">
+      <button class="btn" id="unlock" type="button">Enter</button>
+    </div>
+    <p class="err" id="err" hidden></p>
+  </div>
+
+  <div id="console" hidden>
+    <div class="wrap steward-top">
+      <div>
+        <p class="kicker">live room</p>
+        <h1>Steward</h1>
+        <p class="steward-status" id="roomstatus">loading…</p>
+      </div>
+      <div class="row">
+        <button class="btn ghost" id="refresh" type="button">Refresh</button>
+        <button class="btn ghost" id="lock" type="button">Lock</button>
+      </div>
+    </div>
+
+    <section class="wrap">
+      <div class="steward-stats" id="stats"></div>
+    </section>
+
+    <div class="wrap steward-tabs" role="tablist">
+      <button class="steward-tab active" data-tab="archive" type="button">Archive</button>
+      <button class="steward-tab" data-tab="memory" type="button">Memory</button>
+      <button class="steward-tab" data-tab="seats" type="button">Seats</button>
+    </div>
+
+    <section class="wrap steward-panel" id="tab-archive">
+      <div class="steward-tools">
+        <input id="search" type="search" placeholder="Search text, scenario, node…">
+        <select id="visibility">
+          <option value="all">All</option>
+          <option value="public">Public</option>
+          <option value="hidden">Hidden</option>
+        </select>
+        <button class="btn ghost" id="reload-archive" type="button">Reload</button>
+      </div>
+      <p class="steward-count" id="archcount"></p>
+      <div class="feed" id="feed"></div>
+    </section>
+
+    <section class="wrap steward-panel" id="tab-memory" hidden>
+      <div class="steward-split">
+        <div>
+          <h2>Shared summary</h2>
+          <p class="sub">Compressed long-term memory the mind carries between cycles.</p>
+          <pre class="steward-box" id="summary"></pre>
+          <h2 style="margin-top:28px">Unresolved</h2>
+          <p class="steward-box" id="unresolved"></p>
+        </div>
+        <div>
+          <h2>Weather</h2>
+          <p class="sub">Internal meters after the last state update.</p>
+          <div class="steward-meters" id="meters"></div>
+          <h2 style="margin-top:28px">Recent scenarios</h2>
+          <ul class="steward-list" id="scenlist"></ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap steward-panel" id="tab-seats" hidden>
+      <h2>Seat map</h2>
+      <p class="sub" id="seatsub">128 seats. Filled cells are claimed.</p>
+      <div class="gridwrap steward-map"><div class="grid" id="seatmap" role="grid" aria-label="Seat occupancy"></div></div>
+    </section>
+  </div>
+</main>
+
+<script src="js/core.js"></script>
+<script>
+const err=document.getElementById('err');
+const tok=document.getElementById('tok');
+const gate=document.getElementById('gate');
+const consoleEl=document.getElementById('console');
+const feed=document.getElementById('feed');
+tok.value=localStorage.getItem('ganglia_admin')||'';
+
+function show(m){
+  if(!m){ err.hidden=true; err.textContent=''; return; }
+  err.hidden=false; err.textContent=m;
+}
+
+async function api(path, opts={}){
+  const res=await fetch(path,{...opts, headers:{'Content-Type':'application/json','X-Admin-Token':tok.value, ...(opts.headers||{})}});
+  const data=await res.json().catch(()=>({detail:res.statusText}));
+  if(!res.ok) throw new Error(typeof data.detail==='string'?data.detail:Array.isArray(data.detail)?data.detail.map(x=>x.msg||x).join(' '):'error');
+  return data;
+}
+
+function esc(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function meter(name, value){
+  const v=Math.max(0, Math.min(10, Number(value)||0));
+  const bars=Array.from({length:10},(_,i)=>`<b class="${i<v?'on':''}"></b>`).join('');
+  return `<div class="state"><span>${esc(name)}</span><div class="meter" role="meter" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${v}">${bars}</div></div>`;
+}
+
+function renderStats(o){
+  const cells=[
+    ['Cycle', o.cycle],
+    ['Writer', o.writer+(o.model_ready?' · live':' · offline')],
+    ['Claimed', `${o.nodes_claimed} / ${o.nodes_total}`],
+    ['Free seats', o.nodes_free],
+    ['Users', o.users],
+    ['Scenarios', o.scenarios],
+    ['Public thoughts', o.thoughts_public],
+    ['Hidden', o.thoughts_hidden],
+  ];
+  document.getElementById('stats').innerHTML=cells.map(([k,v])=>
+    `<div class="steward-stat"><span>${esc(k)}</span><strong>${esc(v)}</strong></div>`
+  ).join('');
+  document.getElementById('roomstatus').textContent=
+    `${o.busy?'busy · '+o.status:'idle · '+o.status} · signal ${o.signal_source} · ${o.thoughts_total} thoughts`;
+}
+
+function renderMemory(o){
+  document.getElementById('summary').textContent=o.summary||'(empty summary)';
+  document.getElementById('unresolved').textContent=o.unresolved_thought||'(none)';
+  const w=o.weather||{};
+  document.getElementById('meters').innerHTML=
+    meter('curiosity', w.curiosity)+
+    meter('intensity', w.intensity)+
+    meter('warmth', w.warmth)+
+    meter('focus', w.focus)+
+    meter('restlessness', w.restlessness);
+  const list=document.getElementById('scenlist');
+  list.innerHTML='';
+  (o.recent_scenarios||[]).forEach(text=>{
+    const li=document.createElement('li');
+    li.textContent=text;
+    list.appendChild(li);
+  });
+  if(!(o.recent_scenarios||[]).length) list.innerHTML='<li class="dim">No scenarios yet.</li>';
+}
+
+function renderSeats(o){
+  const map=document.getElementById('seatmap');
+  map.innerHTML='';
+  const occ=o.occupancy||[];
+  for(let i=0;i<128;i++){
+    const b=document.createElement('button');
+    b.className='cell'+(occ[i]?' claimed':'');
+    b.type='button';
+    b.title=`node ${String(i).padStart(3,'0')}${occ[i]?' · claimed':' · free'}`;
+    b.setAttribute('aria-label', b.title);
+    map.appendChild(b);
+  }
+  document.getElementById('seatsub').textContent=
+    `${o.nodes_claimed} claimed · ${o.nodes_free} free · ${o.users} identities`;
+}
+
+function card(t){
+  const el=document.createElement('article');
+  el.className='thought'+(t.hidden?' is-hidden':'');
+  const when=t.created_at?new Date(t.created_at).toLocaleString():'';
+  el.innerHTML=`<div class="meta">
+      <span class="tag">${esc(t.trigger)}</span>
+      <span>#${t.id}</span>
+      ${t.hidden?'<span class="tag acc">hidden</span>':''}
+      <span>node ${t.node_id??'—'}</span>
+      <span>${esc(t.writer||'')}</span>
+      <span>${esc(when)}</span>
+    </div>
+    ${t.scenario?`<div class="scn"></div>`:''}
+    <p></p>
+    <div class="thought-state">curiosity ${t.curiosity} · intensity ${t.intensity} · warmth ${t.warmth}</div>
+    <div class="row" style="margin-top:12px">
+      <button class="btn ghost hide" type="button">${t.hidden?'Restore':'Hide'}</button>
+    </div>`;
+  if(t.scenario) el.querySelector('.scn').textContent=t.scenario;
+  el.querySelector('p').textContent=t.text;
+  el.querySelector('.hide').onclick=async()=>{
+    try{
+      await api('/api/admin/thoughts/'+t.id+'/hide',{method:'POST', body:JSON.stringify({hidden:!t.hidden})});
+      await loadArchive();
+      await loadOverview();
+    }catch(e){ show(e.message); }
+  };
+  return el;
+}
+
+async function loadOverview(){
+  const o=await api('/api/admin/overview');
+  renderStats(o);
+  renderMemory(o);
+  renderSeats(o);
+  return o;
+}
+
+async function loadArchive(){
+  const q=document.getElementById('search').value.trim();
+  const visibility=document.getElementById('visibility').value;
+  const params=new URLSearchParams();
+  if(q) params.set('q', q);
+  if(visibility!=='all') params.set('visibility', visibility);
+  const rows=await api('/api/admin/thoughts?'+params.toString());
+  feed.innerHTML='';
+  rows.forEach(t=>feed.appendChild(card(t)));
+  document.getElementById('archcount').textContent=rows.length?`${rows.length} shown`:'Nothing matches.';
+  if(!rows.length) feed.textContent='';
+}
+
+async function enter(){
+  show('');
+  localStorage.setItem('ganglia_admin', tok.value);
+  try{
+    await loadOverview();
+    await loadArchive();
+    gate.hidden=true;
+    consoleEl.hidden=false;
+  }catch(e){
+    show(e.message);
+    gate.hidden=false;
+    consoleEl.hidden=true;
+  }
+}
+
+function setTab(name){
+  document.querySelectorAll('.steward-tab').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.steward-panel').forEach(p=>p.hidden = p.id!=='tab-'+name);
+}
+
+document.getElementById('unlock').onclick=enter;
+document.getElementById('refresh').onclick=async()=>{
+  show('');
+  try{ await loadOverview(); await loadArchive(); }catch(e){ show(e.message); }
+};
+document.getElementById('lock').onclick=()=>{
+  consoleEl.hidden=true;
+  gate.hidden=false;
+  show('');
+};
+document.getElementById('reload-archive').onclick=()=>loadArchive().catch(e=>show(e.message));
+document.getElementById('search').onkeydown=e=>{ if(e.key==='Enter') loadArchive().catch(err=>show(err.message)); };
+document.getElementById('visibility').onchange=()=>loadArchive().catch(e=>show(e.message));
+document.querySelectorAll('.steward-tab').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+document.getElementById('theme').onclick=()=>{
+  const r=document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme==='dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  r.dataset.theme = dark?'light':'dark';
+  drawLogo();
+};
+drawLogo();
+if(tok.value) enter();
+</script>
+</body>
+</html>

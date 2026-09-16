@@ -5,4 +5,17 @@ node_modules/
 *.log
 
 .vercel
-.env*
+.env
+.env.local
+!.env.example
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+data/voices/*
+!data/voices/.gitkeep
+data/backups/

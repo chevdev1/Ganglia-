@@ -35,14 +35,38 @@ nav a.active{color:var(--fg)}
 .btn.ghost:hover{box-shadow:inset 0 0 0 2px var(--acc);color:var(--acc);transform:none}
 .btn.acc{background:var(--acc);color:var(--acc-ink);box-shadow:4px 4px 0 var(--fg)}
 .btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
-.theme{background:none;border:0;padding:6px;color:var(--dim)}
+.theme{background:none;border:0;padding:6px;color:var(--dim);font-size:18px;line-height:1}
+.theme:hover{color:var(--fg)}
+.auth{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.auth .btn{text-decoration:none}
+.auth a#profile{cursor:pointer}
+.auth span#profile{cursor:default}
+.flash{margin:0;padding:10px 24px;border-bottom:1px solid var(--acc);color:var(--acc);font-size:13px;text-align:center;background:var(--bg)}
+.flash.note{color:var(--dim);border-bottom-color:var(--line)}
 
 /* hero */
 .hero{display:grid;grid-template-columns:.9fr 1.1fr;gap:48px;align-items:center;padding:72px 24px 56px}
 h1{font-family:var(--px);font-weight:400;font-size:clamp(44px,7vw,88px);line-height:.95;margin:0 0 24px;letter-spacing:-.01em}
 .lede{max-width:46ch;color:var(--dim);margin:0 0 32px;font-size:16px}
 .lede b{color:var(--fg);font-weight:500}
-.cta{display:flex;gap:16px;flex-wrap:wrap}
+.wallet-sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px}
+.wallet-sheet[hidden]{display:none!important}
+.wallet-sheet-card{position:relative;background:var(--bg);border:1px solid var(--fg);box-shadow:8px 8px 0 var(--acc);padding:28px 24px 22px;width:min(440px,100%)}
+.wallet-void .wallet-h{font-family:var(--px);font-weight:400;font-size:clamp(28px,5vw,36px);line-height:1;margin:0 0 12px}
+.wallet-void .wallet-h span{color:var(--acc)}
+.wallet-tip{margin:0 0 18px;color:var(--dim);font-size:13px;line-height:1.45}
+.wallet-status{border:1px solid var(--line);padding:16px 18px;margin-bottom:16px}
+.wallet-status-row{display:flex;gap:8px;align-items:center;font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);margin-bottom:8px}
+.wallet-status-big{font-family:var(--px);font-size:28px;margin:0 0 8px;color:var(--acc)}
+.wallet-x{position:absolute;top:10px;right:12px;background:none;border:0;font-size:22px;color:var(--dim);line-height:1}
+.wallet-list{display:flex;flex-direction:column;gap:10px;margin-bottom:10px}
+.wallet-opt{width:100%;text-align:left}
+.wallet-primary{padding-top:16px;padding-bottom:16px}
+.wallet-opt-title{display:block;font-family:var(--px);font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+.wallet-opt-sub{display:block;margin-top:4px;font-size:12px;opacity:.75;font-family:var(--mono);text-transform:none;letter-spacing:0}
+.wallet-hint{margin:8px 0 0;color:var(--dim);font-size:12px;line-height:1.45}
+.wallet-hint a{color:var(--acc)}
+.wallet-hint code{font-size:11px}
 .mind{position:relative;border:1px solid var(--line);background:var(--bg)}
 .mind canvas{width:100%;height:auto;aspect-ratio:4/3;image-rendering:pixelated;cursor:grab;touch-action:none}
 .hud{position:absolute;left:14px;right:14px;top:12px;display:flex;justify-content:space-between;gap:12px;font-size:12px;color:var(--dim);pointer-events:none}
@@ -99,6 +123,10 @@ textarea{width:100%;min-height:150px;resize:vertical;background:var(--bg);color:
 textarea:focus{outline:none;border-color:var(--acc)}
 .warn{display:flex;gap:10px;font-size:13px;color:var(--dim);margin:14px 0 18px}
 .warn svg{flex:none;width:14px;height:14px;margin-top:3px}
+.err{color:var(--acc);font-size:13px;margin:0 0 12px}
+.speak{font:12px var(--mono);background:transparent;border:0;color:var(--dim);padding:0 4px}
+.speak:hover{color:var(--acc)}
+.thought-state{margin-top:10px;font-size:12px;color:var(--dim)}
 .row{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .chars{font-size:12px;color:var(--dim)}
 .locked{font-size:13px;color:var(--dim);border:1px dashed var(--line);padding:16px;margin-bottom:16px}
@@ -150,9 +178,62 @@ footer p{margin:0;max-width:60ch}
 .notebox{border:1px dashed var(--line);padding:16px 18px;font-size:13px;color:var(--dim);margin-top:8px}
 .notebox b{color:var(--fg)}
 
+.kicker{font-family:var(--px);font-size:13px;color:var(--acc);letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px}
+.cab-hero{display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center;padding:72px 24px 56px}
+.cab-copy .lede{margin-bottom:14px}
+.cab-meta{margin:0 0 24px;color:var(--dim);font-size:13px}
+.cab-enter{max-width:42ch;padding:28px 0 48px}
+.cab-claim{display:grid;gap:20px}
+.cab-mini .grid{grid-template-columns:repeat(16,minmax(18px,1fr));max-width:520px}
+.cab-room{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:start}
+.cab-note{margin:14px 0 0;color:var(--dim);font-size:13px}
+.sigil-card{border:1px solid var(--line);padding:28px;display:flex;flex-direction:column;align-items:center;gap:14px;background:var(--bg)}
+.sigil-card.lit{box-shadow:8px 8px 0 var(--acc)}
+#sigil{width:168px;height:168px;image-rendering:pixelated;background:var(--cell)}
+.sigil-cap{margin:0;font-size:13px;color:var(--dim)}
+.mind-badge{margin:0;font-family:var(--px);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
+.mind-badge.on{color:var(--acc)}
+.composer input{width:100%;background:var(--bg);color:var(--fg);border:2px solid var(--fg);padding:12px 14px;font:15px var(--mono)}
+.composer input:focus{outline:none;border-color:var(--acc)}
+.page-cabinet footer .wrap{grid-template-columns:1fr}
+
+/* steward console */
+.page-steward .lede{max-width:54ch}
+.steward-gate{padding:72px 24px 48px;max-width:640px}
+.steward-gate label{display:block;font-size:13px;color:var(--dim);margin:0 0 8px}
+.steward-auth{max-width:520px;gap:12px}
+.steward-auth input,.steward-tools input,.steward-tools select{
+  flex:1;min-width:0;background:var(--bg);color:var(--fg);border:2px solid var(--fg);
+  padding:12px 14px;font:14px var(--mono)
+}
+.steward-top{display:flex;justify-content:space-between;align-items:end;gap:24px;padding:48px 24px 8px}
+.steward-status{margin:8px 0 0;color:var(--dim);font-size:13px}
+.steward-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:24px 0 8px}
+.steward-stat{border:1px solid var(--line);padding:14px 16px;background:var(--bg)}
+.steward-stat span{display:block;font-size:12px;color:var(--dim);margin-bottom:8px}
+.steward-stat strong{font-family:var(--px);font-size:22px;font-weight:400;line-height:1.1}
+.steward-tabs{display:flex;gap:8px;padding:28px 24px 0;border-bottom:1px solid var(--line)}
+.steward-tab{background:none;border:0;padding:12px 4px;margin-bottom:-1px;color:var(--dim);font-family:var(--px);font-size:14px;border-bottom:2px solid transparent}
+.steward-tab.active{color:var(--fg);border-bottom-color:var(--acc)}
+.steward-panel{padding:28px 24px 64px}
+.steward-tools{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.steward-tools select{flex:0 0 140px}
+.steward-count{margin:0 0 16px;color:var(--dim);font-size:13px}
+.steward-split{display:grid;grid-template-columns:1.1fr .9fr;gap:36px;align-items:start}
+.steward-box{margin:0;padding:16px 18px;border:1px solid var(--line);background:var(--bg);white-space:pre-wrap;word-break:break-word;font:14px/1.55 var(--mono);color:var(--fg);min-height:4.5em}
+.steward-meters{display:grid;gap:12px}
+.steward-list{margin:0;padding:0;list-style:none;display:grid;gap:10px}
+.steward-list li{border:1px solid var(--line);padding:12px 14px;font-size:13px;line-height:1.45}
+.steward-list li.dim{color:var(--dim);border-style:dashed}
+.steward-map .grid{grid-template-columns:repeat(16,minmax(18px,1fr))}
+.thought.is-hidden{opacity:.72;border-style:dashed}
+
 @media (max-width:900px){
-  nav{display:none}
-  .hero,.nodes,.two,footer .wrap{grid-template-columns:1fr}
+  .bar{flex-wrap:wrap;height:auto;padding:10px 0;gap:12px 16px}
+  nav{display:flex;flex-wrap:wrap;gap:12px 16px;margin-left:0;width:100%;order:3}
+  .hero,.nodes,.two,footer .wrap,.cab-hero,.cab-room,.steward-split{grid-template-columns:1fr}
+  .steward-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .steward-top{flex-direction:column;align-items:stretch}
   .ritual{grid-template-columns:1fr}
   .step{border-right:0;border-bottom:1px solid var(--line)} .step:last-child{border-bottom:0}
   .panel{position:static}

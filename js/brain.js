@@ -5,7 +5,11 @@
  */
 /* ---------- 3D pixel brain + probe ---------- */
 const brain=(()=>{
-  const cv=document.getElementById('mindcv'), g=cv.getContext('2d');
+  const cv=document.getElementById('mindcv');
+  if(!cv){
+    return {start(){},target(){},ripple(){},stimulate(){},colors(){}};
+  }
+  const g=cv.getContext('2d');
   const W=320,H=240; cv.width=W; cv.height=H;
   const img=g.createImageData(W,H), buf=img.data, zb=new Float32Array(W*H);
   const hex=h=>{h=h.replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]};

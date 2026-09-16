@@ -1,7 +1,7 @@
 /*
  * core.js: shared helpers, colour tokens, pixel logo mark
  * Classic script (no modules/build). Files share global scope; load order matters:
- * core.js -> brain.js -> app.js
+ * core.js -> wallet.js -> brain.js -> app.js
  */
 'use strict';
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -29,9 +29,14 @@ dirs.forEach(([dx,dy],i)=>{
 // header logo
 const logo=document.getElementById('logo');
 function drawLogo(){
+  if(!logo) return;
   logo.innerHTML='';
   G.forEach(s=>{const [x,y]=s.split(',');const r=document.createElementNS('http://www.w3.org/2000/svg','rect');
     r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',1);r.setAttribute('height',1);
-    r.setAttribute('fill', NODES[1].includes(s)?css('--acc'):css('--fg')); logo.appendChild(r);});
+    r.setAttribute('fill', NODES[1].includes(s)?css('--acc'):css('--fg'));     logo.appendChild(r);});
+}
+
+function openSeat(){
+  location.href='/me.html';
 }
 
