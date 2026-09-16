@@ -58,6 +58,12 @@ CONSTITUTION.md       character bible (also the model system prompt)
 LORE.md               public myth
 DISCLAIMER.md         honesty text
 admin.html            steward hide/restore
+404.html              pixel not-found page (served by backend's 404 handler)
 backend/              FastAPI, SQLite, writers, TTS, moderation
+js/motion.js          shared animation primitives (dither reveal, scramble,
+                       line reveal, count up, draw path, magnetic, theme wipe)
+assets/og-image.png   link-preview image, regenerate with
+                       scripts/gen_og_image.py (Pillow, deterministic)
 docker-compose.yml    one-container deploy
+GANGLIA_LANDING_UPGRADE_PROMPT.md   living spec for the landing's premium pass
 ```
