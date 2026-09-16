@@ -110,8 +110,37 @@
 </footer>
 
 <script src="js/core.js"></script>
+<script src="js/motion.js"></script>
 <script src="js/wallet.js"></script>
 <script src="js/brain.js"></script>
 <script src="js/app.js"></script>
+<script>
+/* hero reveal: signature entrance, runs once per load, skipped under reduced motion */
+if (!reduce) {
+  const heroH1 = document.querySelector('.hero h1');
+  const heroLede = document.querySelector('.hero .lede');
+  const heroCta = document.querySelectorAll('.hero .cta .btn');
+  const heroMind = document.querySelector('.mind');
+  heroCta.forEach(b=>{
+    b.style.opacity='0'; b.style.transform='translateY(8px)';
+    b.style.transition=`opacity var(--d-3) var(--ease-out), transform var(--d-3) var(--ease-out)`;
+  });
+  if (heroMind) ditherReveal(heroMind);
+  if (heroH1) scramble(heroH1).then(()=> heroLede ? lineReveal(heroLede) : null).then(()=>{
+    heroCta.forEach((b,i)=> setTimeout(()=>{ b.style.opacity='1'; b.style.transform='translateY(0)'; }, i*90));
+  });
+
+  /* secondary sections: reveal once at ~22% visibility, staggered, never on scroll back up */
+  document.querySelectorAll('.ritual .step').forEach((el,i)=>{
+    el.style.opacity='0'; el.style.transform='translateY(10px)';
+    el.style.transition=`opacity var(--d-3) var(--ease-out), transform var(--d-3) var(--ease-out)`;
+    el.style.transitionDelay=(i*100)+'ms';
+  });
+  const ritual = document.querySelector('.ritual');
+  if (ritual) onEnterView(ritual, ()=>{
+    ritual.querySelectorAll('.step').forEach(el=>{ el.style.opacity='1'; el.style.transform='translateY(0)'; });
+  });
+}
+</script>
 </body>
 </html>

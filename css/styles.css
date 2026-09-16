@@ -1,6 +1,17 @@
 :root{
   --bg:#FFFFFF; --fg:#0A0A0A; --dim:#6B6B6B; --line:#E4E4E4; --cell:#EDEDED; --claimed:#0A0A0A; --acc:#3A63F5; --acc-ink:#FFFFFF;
   --px:"Silkscreen", "Courier New", monospace; --mono:"Geist Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* motion system: steps for state changes, smooth curves for space (see docs §5) */
+  --ease-out: cubic-bezier(.16,1,.3,1);
+  --ease-in-out: cubic-bezier(.65,0,.35,1);
+  --ease-snap: cubic-bezier(.2,0,0,1);
+  --d-1: 120ms;
+  --d-2: 240ms;
+  --d-3: 480ms;
+  --d-4: 900ms;
+  --steps-ui: steps(4, end);
+  --steps-reveal: steps(12, end);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){--bg:#000000; --fg:#F2F2F2; --dim:#7A7A7A; --line:#1F1F1F; --cell:#161616; --claimed:#F2F2F2; --acc:#4D7CFF; --acc-ink:#000000;}
