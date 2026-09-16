@@ -20,7 +20,14 @@
 
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--mono);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+@media (prefers-reduced-motion: no-preference){ html{scroll-behavior:smooth} }
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--mono);-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+/* faint film-grain texture over the whole page: cheap, tasteful depth on flat pixel-black */
+body::after{
+  content:"";position:fixed;inset:0;z-index:5;pointer-events:none;opacity:.035;mix-blend-mode:overlay;
+  background-repeat:repeat;background-size:140px 140px;
+  background-image:url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='120'%20height='120'%3E%3Cfilter%20id='n'%3E%3CfeTurbulence%20type='fractalNoise'%20baseFrequency='0.9'%20numOctaves='2'%20stitchTiles='stitch'/%3E%3C/filter%3E%3Crect%20width='100%25'%20height='100%25'%20filter='url(%23n)'/%3E%3C/svg%3E");
+}
 img,svg,canvas{max-width:100%;display:block}
 a{color:inherit}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -28,20 +35,27 @@ button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
 
 /* dotted pixel ground */
-.ground{background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:16px 16px}
+.ground{position:relative;background-image:radial-gradient(var(--line) 1px,transparent 1.2px);background-size:16px 16px}
+@supports (color: color-mix(in srgb, red, blue)){
+  .ground::before{
+    content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 900px 500px at 50% -8%, color-mix(in srgb, var(--acc) 14%, transparent), transparent 65%);
+  }
+  .ground>*{position:relative;z-index:1}
+}
 
 /* header */
-header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line);transition:transform var(--d-2) var(--ease-out)}
-header.hide{transform:translateY(-100%)}
+header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
 .readprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
 .readprog i{display:block;height:100%;width:0%;background:var(--acc);transition:width .1s linear}
 .bar{display:flex;align-items:center;gap:28px;height:64px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
 .brand svg{width:26px;height:26px;image-rendering:pixelated}
 nav{display:flex;gap:22px;margin-left:auto}
-nav a{text-decoration:none;color:var(--dim);font-size:14px}
+nav a{text-decoration:none;color:var(--dim);font-size:14px;transition:color var(--d-2) var(--ease-out),text-shadow var(--d-2) var(--ease-out)}
 nav a:hover{color:var(--fg)}
 nav a.active{color:var(--fg)}
+nav a.decoding{color:var(--acc);text-shadow:0 0 8px color-mix(in srgb, var(--acc) 55%, transparent)}
 .btn{font-family:var(--px);font-size:14px;border:0;padding:12px 18px;background:var(--fg);color:var(--bg);box-shadow:4px 4px 0 var(--acc);transition:transform .08s, box-shadow .08s}
 .btn:hover{transform:translate(-1px,-1px);box-shadow:5px 5px 0 var(--acc)}
 .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--acc)}
