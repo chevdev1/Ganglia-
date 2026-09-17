@@ -57,11 +57,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
 .readprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
 .readprog i{display:block;height:100%;width:0%;background:var(--acc);transition:width .1s linear}
-.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 28px;min-height:64px;padding:10px 0}
-.bar-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px 14px}
-.brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
+/* deterministic 2-row header at every width: row 1 is brand + actions
+   (always just two compact items, so it reliably fits one line), row 2 is
+   nav, forced onto its own line via width:100% regardless of viewport —
+   removes the "sometimes nav shares row 1, sometimes it doesn't" ambiguity
+   that caused inconsistent wrapping at in-between widths. */
+.bar{display:flex;flex-wrap:wrap;align-items:center;row-gap:10px;column-gap:16px;min-height:64px;padding:12px 0}
+.brand{order:1;display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
 .brand svg{width:26px;height:26px;image-rendering:pixelated}
-nav{display:flex;flex-wrap:wrap;gap:8px 22px;margin-left:auto}
+.bar-actions{order:2;margin-left:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px 14px}
+nav{order:3;width:100%;display:flex;flex-wrap:wrap;gap:8px 22px;margin-left:0}
 nav a{text-decoration:none;color:var(--dim);font-size:14px;transition:color var(--d-2) var(--ease-out),text-shadow var(--d-2) var(--ease-out)}
 nav a:hover{color:var(--fg)}
 nav a.active{color:var(--fg)}
@@ -346,12 +351,8 @@ footer p{margin:0 0 12px;max-width:60ch}
 .thought.is-hidden{opacity:.72;border-style:dashed}
 
 @media (max-width:900px){
-  .bar{flex-wrap:wrap;height:auto;padding:10px 0 8px;row-gap:10px;column-gap:12px}
-  .brand{order:1}
-  .bar-actions{order:2;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;row-gap:8px}
   nav{
-    order:3;width:100%;margin-left:0;flex-wrap:nowrap;
-    overflow-x:auto;-webkit-overflow-scrolling:touch;gap:18px;
+    flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:18px;
     -ms-overflow-style:none;scrollbar-width:none;padding-bottom:2px;
   }
   nav::-webkit-scrollbar{display:none}
