@@ -57,11 +57,11 @@ button{font:inherit;color:inherit;cursor:pointer}
 header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--line)}
 .readprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
 .readprog i{display:block;height:100%;width:0%;background:var(--acc);transition:width .1s linear}
-.bar{display:flex;align-items:center;gap:28px;height:64px}
-.bar-actions{display:flex;align-items:center;gap:14px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 28px;min-height:64px;padding:10px 0}
+.bar-actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:10px 14px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
 .brand svg{width:26px;height:26px;image-rendering:pixelated}
-nav{display:flex;gap:22px;margin-left:auto}
+nav{display:flex;flex-wrap:wrap;gap:8px 22px;margin-left:auto}
 nav a{text-decoration:none;color:var(--dim);font-size:14px;transition:color var(--d-2) var(--ease-out),text-shadow var(--d-2) var(--ease-out)}
 nav a:hover{color:var(--fg)}
 nav a.active{color:var(--fg)}
