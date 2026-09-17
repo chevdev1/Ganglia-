@@ -58,6 +58,7 @@ header{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px s
 .readprog{position:absolute;left:0;right:0;bottom:-1px;height:2px;background:transparent}
 .readprog i{display:block;height:100%;width:0%;background:var(--acc);transition:width .1s linear}
 .bar{display:flex;align-items:center;gap:28px;height:64px}
+.bar-actions{display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none;font-family:var(--px);font-size:20px;letter-spacing:.02em}
 .brand svg{width:26px;height:26px;image-rendering:pixelated}
 nav{display:flex;gap:22px;margin-left:auto}
@@ -345,12 +346,11 @@ footer p{margin:0 0 12px;max-width:60ch}
 .thought.is-hidden{opacity:.72;border-style:dashed}
 
 @media (max-width:900px){
-  .bar{flex-wrap:wrap;height:auto;padding:10px 0 8px;gap:10px 12px;row-gap:8px}
+  .bar{flex-wrap:wrap;height:auto;padding:10px 0 8px;row-gap:10px;column-gap:12px}
   .brand{order:1}
-  #sound,#theme,#skinBtn{order:2}
-  .auth{order:3;margin-left:auto}
+  .bar-actions{order:2;margin-left:auto;flex-wrap:wrap;justify-content:flex-end;row-gap:8px}
   nav{
-    order:4;width:100%;margin-left:0;flex-wrap:nowrap;
+    order:3;width:100%;margin-left:0;flex-wrap:nowrap;
     overflow-x:auto;-webkit-overflow-scrolling:touch;gap:18px;
     -ms-overflow-style:none;scrollbar-width:none;padding-bottom:2px;
   }
