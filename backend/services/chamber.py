@@ -122,3 +122,34 @@ def traces_for(session: Session, user: User) -> list[Output]:
         .limit(24)
     )
     return list(session.scalars(query).all())
+
+
+GENESIS_SEATS = 16
+LONG_STANDING_DAYS = 30
+VOICE_SCENARIOS = 10
+
+
+def relics_for(nodes: list[tuple[int, datetime | None, int]], now: datetime) -> dict[int, list[str]]:
+    """Badges derived only from real data. nodes = (node_id, claimed_at, scenario_count).
+
+    genesis: one of the first 16 seats ever claimed. long-standing: held 30+ days.
+    voice: 10+ scenarios sent from the seat.
+    """
+
+    def aware(stamp: datetime) -> datetime:
+        return stamp if stamp.tzinfo else stamp.replace(tzinfo=timezone.utc)
+
+    claimed = sorted((n for n in nodes if n[1] is not None), key=lambda n: (aware(n[1]), n[0]))
+    genesis = {node_id for node_id, _, _ in claimed[:GENESIS_SEATS]}
+    out: dict[int, list[str]] = {}
+    for node_id, claimed_at, count in claimed:
+        badges: list[str] = []
+        if node_id in genesis:
+            badges.append("genesis")
+        if (now - aware(claimed_at)).days >= LONG_STANDING_DAYS:
+            badges.append("long-standing")
+        if count >= VOICE_SCENARIOS:
+            badges.append("voice")
+        if badges:
+            out[node_id] = badges
+    return out

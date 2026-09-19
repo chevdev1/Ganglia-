@@ -54,6 +54,7 @@ from backend.services.chamber import (
     cooldown_left,
     days_standing,
     occupancy_map,
+    relics_for,
     seat_title,
     standing_line,
     traces_for,
@@ -127,6 +128,7 @@ def _nodes(session: Session) -> list[NodeOut]:
 
     nodes = session.scalars(select(Node).order_by(Node.id)).all()
     owners = {user.id: user for user in session.scalars(select(User)).all()}
+    relics = relics_for([(n.id, n.claimed_at, n.scenario_count) for n in nodes], datetime.now(timezone.utc))
     return [
         NodeOut(
             id=node.id,
@@ -134,6 +136,7 @@ def _nodes(session: Session) -> list[NodeOut]:
             alias=owners[node.owner_id].alias if node.owner_id else None,
             scenarios=node.scenario_count,
             region=region_for(node.id),
+            relics=relics.get(node.id, []),
         )
         for node in nodes
     ]
@@ -554,6 +557,13 @@ def docs_page() -> FileResponse:
     """Human documentation. API swagger lives at /api/docs."""
 
     return FileResponse(ROOT / "docs.html")
+
+
+@app.get("/lore.html")
+def lore_page() -> FileResponse:
+    """Public lore: the myth, the eight regions, the relics."""
+
+    return FileResponse(ROOT / "lore.html")
 
 
 @app.get("/me.html")

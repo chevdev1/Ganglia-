@@ -45,6 +45,7 @@ class NodeOut(BaseModel):
     alias: str | None = None
     scenarios: int
     region: str
+    relics: list[str] = []
 
 
 class ThoughtOut(BaseModel):

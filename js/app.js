@@ -7,6 +7,8 @@ const labels=['frontal','parietal','temporal','occipital','cingulate','insula','
 const state={curiosity:7,intensity:4,warmth:6,focus:5,restlessness:4};
 const owners=Array.from({length:128},()=>null);
 const scenarioCounts=Array.from({length:128},()=>0);
+const nodeRelics=Array.from({length:128},()=>[]);
+const RELIC_LABEL={genesis:'Genesis','long-standing':'Long standing',voice:'Voice'};
 let mine=null, selected=null, connected=false, address='', claimInProgress=false;
 let token=localStorage.getItem('ganglia_token')||'';
 let lastThoughtId=0;
@@ -152,7 +154,7 @@ function renderGrid(){
   grid.innerHTML='';
   owners.forEach((o,i)=>{
     const b=document.createElement('button');
-    b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'');
+    b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'')+(nodeRelics[i].includes('genesis')?' genesis':'');
     b.setAttribute('aria-label',`Node ${i}, ${i===mine?'yours':o?'claimed':'free'}`);
     b.dataset.i=i; b.onclick=()=>{selected=i;renderGrid();renderPanel();brain.target(i);};
     b.onmouseenter=()=>{ brain.target(i); blip(1400,0.02,0.03); };
@@ -172,7 +174,7 @@ function renderPanel(){
   const status=i===mine?'Yours':o?'Claimed':'Free';
   const who=i===mine?(window.myAlias||short(address)): (alias||o||'nobody yet');
   panel.innerHTML=`<div class="id">${pad(i)}<button type="button" class="idcopy" id="idcopy" aria-label="Copy node id">copy</button></div>
-  <dl><dt>Status</dt><dd>${status}</dd><dt>Region</dt><dd>${labels[Math.floor(i/16)]}</dd>  <dt>Owner</dt><dd>${who}</dd><dt>Scenarios</dt><dd>${scenarioCounts[i]||0}</dd></dl>
+  <dl><dt>Status</dt><dd>${status}</dd><dt>Region</dt><dd>${labels[Math.floor(i/16)]}</dd>  <dt>Owner</dt><dd>${who}</dd><dt>Scenarios</dt><dd>${scenarioCounts[i]||0}</dd>${nodeRelics[i].length?`<dt>Relics</dt><dd>${nodeRelics[i].map(r=>RELIC_LABEL[r]||r).join(', ')}</dd>`:''}</dl>
   ${ i===mine ? `<a class="btn acc" href="/me.html" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px">Open cabinet</a><a class="btn ghost" href="#archive" style="display:block;text-align:center;text-decoration:none">Send a scenario</a>`
     : o ? `<button class="btn ghost" disabled>Already claimed</button>`
     : `<button class="btn" id="claim">${connected?'Claim this node':'Connect wallet to claim'}</button><p class="note">One owner per node, tied to your wallet. Reconnect later and this seat is still yours.</p>`}`;
@@ -240,7 +242,7 @@ function applyWorld(data){
       warn.textContent='The mind is offline until OPENAI_API_KEY is set in .env and the server is restarted.';
     }else warn.hidden=true;
   }
-  data.nodes.forEach(n=>{ owners[n.id]=n.owner; scenarioCounts[n.id]=n.scenarios; window.nodeAliases=window.nodeAliases||{}; window.nodeAliases[n.id]=n.alias||null; });
+  data.nodes.forEach(n=>{ owners[n.id]=n.owner; scenarioCounts[n.id]=n.scenarios; nodeRelics[n.id]=n.relics||[]; window.nodeAliases=window.nodeAliases||{}; window.nodeAliases[n.id]=n.alias||null; });
   if(data.thoughts&&data.thoughts.length){
     const latest=data.thoughts.reduce((a,b)=> (!a||(b.created_at&&b.created_at>a))?b.created_at:a, null);
     if(latest) lastThoughtAt=latest;
@@ -352,10 +354,26 @@ document.querySelectorAll('#feedfilters .chip').forEach(btn=>{
   };
 });
 
+let tickerId=0, tickerTimer=null;
+function updateTicker(list){
+  const box=document.getElementById('ticker'), el=document.getElementById('tickerText');
+  if(!box||!el||!list||!list.length) return;
+  const t=list.reduce((a,b)=>b.id>a.id?b:a);
+  if(t.id===tickerId) return;
+  tickerId=t.id;
+  const text=t.text.length>200?t.text.slice(0,197)+'…':t.text;
+  box.hidden=false;
+  clearInterval(tickerTimer);
+  if(reduce){ el.textContent=text; return; }
+  let i=0; el.textContent='';
+  tickerTimer=setInterval(()=>{ el.textContent=text.slice(0,++i); if(i>=text.length) clearInterval(tickerTimer); },22);
+}
+
 async function loadState(animateNew){
   const data=await api('/api/state');
   applyWorld(data);
   ingestThoughts(data.thoughts, !!animateNew);
+  updateTicker(data.thoughts);
 }
 
 async function burst(){

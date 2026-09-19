@@ -102,3 +102,28 @@ def test_full_purchase_flow_when_enabled(client, monkeypatch):
     assert ok.json()["node_id"] == 3
     replay = client.post("/api/purchase/confirm", headers=headers, json={"node_id": 3, "tx_hash": TX})
     assert replay.status_code == 409  # same payment can't be reused
+
+
+def test_relics_only_from_real_data():
+    from datetime import datetime, timedelta, timezone
+
+    from backend.services.chamber import relics_for
+
+    now = datetime(2026, 9, 20, tzinfo=timezone.utc)
+    nodes = [(i, now - timedelta(days=100 - i), 0) for i in range(20)]  # 20 claimed, oldest first
+    nodes.append((50, None, 99))  # unclaimed never gets relics
+    nodes[0] = (0, nodes[0][1], 12)
+    r = relics_for(nodes, now)
+    assert r[0] == ["genesis", "long-standing", "voice"]
+    assert "genesis" in r[15] and "genesis" not in r[16]
+    assert 50 not in r
+
+
+def test_state_exposes_relics_and_lore_page(client):
+    r = client.post("/api/auth/local", json={"secret": "0x" + "33" * 32})
+    h = {"Authorization": f"Bearer {r.json()['token']}"}
+    assert client.post("/api/nodes/9/claim", headers=h).status_code == 200
+    nodes = client.get("/api/state", headers=h).json()["nodes"]
+    assert nodes[9]["relics"] == ["genesis"]
+    assert nodes[10]["relics"] == []
+    assert client.get("/lore.html").status_code == 200

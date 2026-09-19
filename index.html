@@ -24,7 +24,7 @@
   <div class="wrap bar">
     <a class="brand" href="#top" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
     <nav aria-label="Main">
-      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/docs.html">Docs</a>
+      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/lore.html">Lore</a><a href="/docs.html">Docs</a>
     </nav>
     <div class="bar-actions">
       <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="true" title="Sound: ambient pad + short blips">♪</button>
@@ -55,6 +55,10 @@
       <p class="livebar" id="livebar">
         <span id="lb-claimed">0/128 claimed</span><i class="dot"></i><span id="lb-scn">0 scenarios</span><i class="dot"></i><span id="lb-last">no thoughts yet</span>
       </p>
+      <div class="ticker" id="ticker" hidden>
+        <span class="ticker-h">the mind, just now</span>
+        <p id="tickerText" class="ticker-t"></p>
+      </div>
     </div>
     <div class="mind">
       <canvas id="mindcv" tabindex="0" aria-label="Rotatable pixel brain with 128 nodes. Drag or use arrow keys to rotate, click a node to send the probe."></canvas>
@@ -119,7 +123,7 @@
         <div>
           <div class="count" id="count"></div>
           <div class="gridwrap"><div class="grid" id="grid" role="grid" aria-label="Node map"></div></div>
-          <div class="legend"><span><i></i>Free</span><span class="c"><i></i>Claimed</span><span class="y"><i></i>Yours</span></div>
+          <div class="legend"><span><i></i>Free</span><span class="c"><i></i>Claimed</span><span class="y"><i></i>Yours</span><span class="g"><i></i>Genesis relic</span></div>
         </div>
         <aside class="panel" id="panel" aria-live="polite"></aside>
       </div>
