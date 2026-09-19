@@ -38,6 +38,19 @@ class Settings(BaseSettings):
     tts_voice: str = "en-US-JennyNeural"
     host_origin: str = "http://127.0.0.1:8080"
 
+    # Robinhood Chain / node sale. All empty = purchase stays "coming soon" and
+    # nothing is ever charged. Fill these in .env once the network + contracts exist.
+    chain_id: int = 0
+    chain_name: str = "Robinhood Chain"
+    chain_rpc_url: str = ""
+    chain_explorer_url: str = ""
+    chain_currency_symbol: str = "ETH"
+    chain_currency_decimals: int = 18
+    gngl_token_address: str = ""
+    sale_contract_address: str = ""
+    sale_function: str = "buyNode(uint256)"
+    node_price_wei: int = 0
+
     @model_validator(mode="after")
     def _free_groq_defaults(self) -> "Settings":
         """Use Groq when the key is a Groq key, or when only GROQ_API_KEY is set."""

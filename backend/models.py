@@ -110,3 +110,16 @@ class MemoryState(Base):
     unresolved_thought: Mapped[str] = mapped_column(Text, default="")
     cycle: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class Purchase(Base):
+    """A verified on-chain node purchase. tx_hash is unique so a payment can't be replayed."""
+
+    __tablename__ = "purchases"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    tx_hash: Mapped[str] = mapped_column(String(66), unique=True, index=True)
+    address: Mapped[str] = mapped_column(String(42), index=True)
+    node_id: Mapped[int] = mapped_column(Integer)
+    chain_id: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

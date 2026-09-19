@@ -47,6 +47,10 @@ Set in `.env` before shipping:
 3. **Send** — public scenario, max 280 characters, PII filtered.
 4. **Watch** — English thought, cached voice, meters, brain, archive. Autonomous thoughts about once a minute.
 
+## Robinhood Chain sale (config-driven)
+
+Off by default. Set `CHAIN_ID`, `CHAIN_RPC_URL`, `SALE_CONTRACT_ADDRESS` and `NODE_PRICE_WEI` (see `.env.example`) and the site switches from free claim to on-chain buying: the wallet is asked to add/switch the network, sends `SALE_FUNCTION(nodeId)` with the price, and the server verifies the tx over RPC (sender, contract, calldata, value, status) before assigning the node. Each tx hash can be used once. Free `/claim` closes while the sale is live. Only real wallets can buy (not the browser-key mode).
+
 ## Lore
 
 `CONSTITUTION.md` is the character. `LORE.md` is the short public version. Scenarios colour the next thought. They do not erase the rest, and they do not override the constitution.

@@ -224,7 +224,7 @@ async function connectWalletConnect(){
     projectId:_wcProjectId,
     showQrModal:true,
     chains:[1],
-    optionalChains:[1],
+    optionalChains:[1].concat(window.SALE_CHAIN_ID?[window.SALE_CHAIN_ID]:[]),
     rpcMap:{1:'https://ethereum.publicnode.com'},
     qrModalOptions:{
       themeMode:'dark',
@@ -346,4 +346,35 @@ function bindAccountWatch(getAddress, onLost){
     if(next===current) return;
     onLost(next||null);
   });
+}
+
+/* ---------- node sale on Robinhood Chain (config-driven, see /api/chain) ---------- */
+async function ensureSaleChain(cfg){
+  const p=_activeProvider||window.ethereum;
+  if(!p) throw new Error('Connect a wallet to buy.');
+  const idHex='0x'+Number(cfg.chain_id).toString(16);
+  const cur=await p.request({method:'eth_chainId'});
+  if(String(cur).toLowerCase()===idHex) return p;
+  try{
+    await p.request({method:'wallet_switchEthereumChain', params:[{chainId:idHex}]});
+  }catch(err){
+    const unknown=err&&(err.code===4902||/unrecognized|not added|unknown chain/i.test(String(err.message||'')));
+    if(!unknown) throw err;
+    const params={chainId:idHex, chainName:cfg.chain_name,
+      nativeCurrency:{name:cfg.currency_symbol, symbol:cfg.currency_symbol, decimals:cfg.currency_decimals},
+      rpcUrls:[cfg.rpc_url]};
+    if(cfg.explorer_url) params.blockExplorerUrls=[cfg.explorer_url];
+    await p.request({method:'wallet_addEthereumChain', params:[params]});
+  }
+  return p;
+}
+
+async function sendSalePurchase(cfg, prepared, from){
+  const p=await ensureSaleChain(cfg);
+  try{
+    return await p.request({method:'eth_sendTransaction', params:[{from, to:prepared.to, data:prepared.data, value:prepared.value}]});
+  }catch(err){
+    if(/rejected|denied|User rejected/i.test(String(err&&err.message||err||''))) throw new Error('Purchase was cancelled in the wallet.');
+    throw err;
+  }
 }

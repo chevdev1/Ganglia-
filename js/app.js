@@ -51,7 +51,7 @@ function renderLotBuy(){
   const region=labels[Math.floor(i/16)];
   lotbuyId.textContent=pad(i);
   lotbuyMeta.textContent=`${region} · ${st}`;
-  lotbuyPrice.textContent=`${price} GNGL (soon)`;
+  lotbuyPrice.textContent=saleLive()?fmtSalePrice(saleCfg):`${price} GNGL (soon)`;
   if(lotbuyBtn){
     if(st==='yours'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Yours'; }
     else if(st==='claimed'){ lotbuyBtn.disabled=true; lotbuyBtn.textContent='Sold'; }
@@ -63,7 +63,7 @@ function renderLotBuy(){
   if(lotcard){
     lotcard.querySelector('.lotcard-id').textContent=pad(i);
     lotcard.querySelector('.lotcard-meta').textContent=st;
-    lotcard.querySelector('.lotcard-price').textContent=price+' GNGL (soon)';
+    lotcard.querySelector('.lotcard-price').textContent=saleLive()?fmtSalePrice(saleCfg):price+' GNGL (soon)';
   }
 }
 
@@ -76,7 +76,7 @@ function syncLotCard(nodeId, sx, sy){
   const st=lotStatus(showId);
   lotcard.querySelector('.lotcard-id').textContent=pad(showId);
   lotcard.querySelector('.lotcard-meta').textContent=st;
-  lotcard.querySelector('.lotcard-price').textContent=lotPrice(showId)+' GNGL (soon)';
+  lotcard.querySelector('.lotcard-price').textContent=saleLive()?fmtSalePrice(saleCfg):lotPrice(showId)+' GNGL (soon)';
   lotcard.hidden=false;
   lotcard.style.left=(sx/320*100)+'%';
   lotcard.style.top=(sy/240*100)+'%';
@@ -406,7 +406,70 @@ async function disconnect(){
   paintConnect(); lockComposer(); renderGrid(); renderPanel();
 }
 
+/* Robinhood Chain sale config (from /api/chain). enabled=false until contracts are set. */
+let saleCfg=null;
+async function loadSaleCfg(){
+  try{
+    saleCfg=await api('/api/chain');
+    if(saleCfg.enabled) window.SALE_CHAIN_ID=saleCfg.chain_id;
+  }catch(_e){ saleCfg=null; }
+  renderLotBuy();
+}
+function fmtSalePrice(cfg){
+  const dec=BigInt(cfg.currency_decimals||18), w=BigInt(cfg.price_wei);
+  const whole=w/(10n**dec);
+  const frac=(w%(10n**dec)).toString().padStart(Number(dec),'0').slice(0,4).replace(/0+$/,'');
+  return whole+(frac?'.'+frac:'')+' '+cfg.currency_symbol;
+}
+const saleLive=()=>!!(saleCfg&&saleCfg.enabled);
+
+async function afterClaimSuccess(i){
+  mine=i; unlock();
+  renderClaimProgress(2);
+  blip(500,0.1,0.07); setTimeout(()=>blip(900,0.08,0.06),90);
+  await loadState(true);
+  burst();
+  brain.target(i,true);
+  claimInProgress=false;
+  renderPanel();
+  showShareCard(i);
+}
+
+async function buyNode(){
+  showErr('');
+  const i=selected;
+  if(i===null) return;
+  claimInProgress=true;
+  try{
+    renderClaimProgress(connected?1:0);
+    if(!connected) await connect(false);
+    if(sessionKind()==='local') throw new Error('Buying needs a real wallet. Leave, then connect with MetaMask or WalletConnect.');
+    renderClaimProgress(1);
+    const prep=await api('/api/purchase/prepare',{method:'POST', body:JSON.stringify({node_id:i})});
+    const hash=await sendSalePurchase(saleCfg, prep, address);
+    document.getElementById('lotbuy-meta').textContent='Waiting for on-chain confirmation…';
+    let done=false, lastErr=null;
+    for(let n=0;n<40&&!done;n++){
+      try{
+        await api('/api/purchase/confirm',{method:'POST', body:JSON.stringify({node_id:i, tx_hash:hash})});
+        done=true;
+      }catch(e){
+        lastErr=e;
+        if(!/pending|not found yet|unreachable/i.test(e.message)) throw e;
+        await new Promise(r=>setTimeout(r,3000));
+      }
+    }
+    if(!done) throw lastErr||new Error('Timed out waiting for confirmation. Your payment is on-chain; reload in a minute.');
+    await afterClaimSuccess(i);
+  }catch(err){
+    claimInProgress=false;
+    showErr(err.message);
+    renderPanel();
+  }
+}
+
 async function claimNode(){
+  if(saleLive()) return buyNode();
   showErr('');
   const i=selected;
   claimInProgress=true;
@@ -415,15 +478,7 @@ async function claimNode(){
     if(!connected) await connect(false);
     renderClaimProgress(1);
     await api('/api/nodes/'+i+'/claim',{method:'POST', body:'{}'});
-    mine=i; unlock();
-    renderClaimProgress(2);
-    blip(500,0.1,0.07); setTimeout(()=>blip(900,0.08,0.06),90);
-    await loadState(true);
-    burst();
-    brain.target(i,true);
-    claimInProgress=false;
-    renderPanel();
-    showShareCard(i);
+    await afterClaimSuccess(i);
   }catch(err){
     claimInProgress=false;
     showErr(err.message);
@@ -606,6 +661,7 @@ setInterval(()=>{ loadState(true).catch(()=>{}); }, 3000);
 
 drawLogo(); renderStates(); renderGrid(); selected=null; renderPanel(); paintConnect();
 brain.start(); window.brain=brain;
+loadSaleCfg();
 if(location.protocol==='file:'){
   showErr('Open the app through the Ganglia server (uvicorn), not as a local file.');
 }else{

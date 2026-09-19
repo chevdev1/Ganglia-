@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
@@ -30,7 +31,7 @@ from backend.auth import (
 )
 from backend.config import ROOT, get_settings
 from backend.db import get_session, init_engine, session_factory
-from backend.models import Node, Output, Scenario, User
+from backend.models import Node, Output, Purchase, Scenario, User
 from backend.schemas import (
     AdminOverviewOut,
     AliasIn,
@@ -65,6 +66,7 @@ from backend.services.memory import (
     serialize_thought,
     short_address,
 )
+from backend.services import chain
 from backend.services.mind import MindRuntime, claim_node, seed_genesis
 from backend.services.moderation import moderate_scenario
 
@@ -314,11 +316,69 @@ def thoughts(session: SessionDep, after_id: int = Query(default=0, ge=0)) -> lis
 async def claim(node_id: int, session: SessionDep, user: UserDep) -> ClaimOut:
     """Take a free node. Repeat scenarios from it do not require another claim."""
 
+    if chain.enabled(settings):
+        raise HTTPException(402, "Nodes are sold on-chain now. Use Buy.")
     try:
         node = claim_node(session, user, node_id)
         session.commit()
     except ValueError as exc:
         raise HTTPException(409, str(exc)) from exc
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(409, "Already claimed.") from exc
+    await mind.process({"type": "claim", "node_id": node.id, "phase": "writing"})
+    return ClaimOut(node_id=node.id, address=user.address)
+
+
+class PurchaseIn(BaseModel):
+    """Which node the caller wants to buy, and (on confirm) the payment tx."""
+
+    node_id: int
+    tx_hash: str | None = None
+
+
+@app.get("/api/chain")
+def chain_info() -> dict[str, object]:
+    """Public Robinhood Chain sale config. enabled=false until contracts are configured."""
+
+    return chain.public_config(settings)
+
+
+@app.post("/api/purchase/prepare")
+def purchase_prepare(body: PurchaseIn, session: SessionDep, user: UserDep) -> dict[str, object]:
+    """Transaction the wallet should send to buy a free node."""
+
+    node = session.get(Node, body.node_id)
+    if node is not None and node.owner_id is not None:
+        raise HTTPException(409, "Already claimed.")
+    if user.node_id is not None:
+        raise HTTPException(409, "You already hold a node.")
+    try:
+        return chain.prepare(settings, body.node_id)
+    except chain.ChainError as exc:
+        raise HTTPException(503, str(exc)) from exc
+
+
+@app.post("/api/purchase/confirm", response_model=ClaimOut)
+async def purchase_confirm(body: PurchaseIn, session: SessionDep, user: UserDep) -> ClaimOut:
+    """Verify the payment on-chain, then give the caller the node."""
+
+    if not body.tx_hash:
+        raise HTTPException(422, "tx_hash is required.")
+    tx_hash = body.tx_hash.lower()
+    if session.scalar(select(Purchase).where(Purchase.tx_hash == tx_hash)):
+        raise HTTPException(409, "This payment was already used.")
+    try:
+        await asyncio.to_thread(chain.verify, settings, tx_hash, user.address, body.node_id)
+    except chain.ChainError as exc:
+        raise HTTPException(402, str(exc)) from exc
+    try:
+        node = claim_node(session, user, body.node_id)
+        session.add(Purchase(tx_hash=tx_hash, address=user.address, node_id=node.id, chain_id=settings.chain_id))
+        session.commit()
+    except ValueError as exc:
+        session.rollback()
+        raise HTTPException(409, f"{exc} Your payment is on-chain; contact the steward with tx {tx_hash}.") from exc
     except IntegrityError as exc:
         session.rollback()
         raise HTTPException(409, "Already claimed.") from exc
