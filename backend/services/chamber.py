@@ -49,7 +49,7 @@ def standing_line(node_id: int | None, claimed_at: datetime | None, alias: str |
     if claimed_at is not None:
         stamp = claimed_at if claimed_at.tzinfo else claimed_at.replace(tzinfo=timezone.utc)
         when = stamp.strftime("%Y-%m-%d")
-        return f"{who} {verb} been standing in node {node_id:03d} — {myth} — since {when}."
+        return f"{who} {verb} been standing in node {node_id:03d}, {myth}, since {when}."
     return f"{who} {'is' if alias else 'are'} standing in node {node_id:03d}, {myth}."
 
 

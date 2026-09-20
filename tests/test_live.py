@@ -85,3 +85,14 @@ def test_pulse_numbers_and_static_revalidation(client):
     for path in ("/", "/docs.html", "/js/app.js", "/css/styles.css"):
         assert client.get(path).headers["cache-control"] == "no-cache"
     assert "cache-control" not in client.get("/api/health").headers or client.get("/api/health").headers["cache-control"] != "no-cache"
+
+
+def test_thought_house_style_no_long_dashes_and_short():
+    from backend.services.writer import ThoughtDraft, polish_thought
+
+    assert polish_thought("condition\u2014so roughly, wait \u2013 or not") == "condition, so roughly, wait, or not"
+    long = "First sentence here. " * 40
+    out = polish_thought(long)
+    assert len(out) <= 460 and out.endswith(".")
+    d = ThoughtDraft(text="a \u2014 b", curiosity=5, intensity=5, warmth=5, focus=5, restlessness=5, summary="", unresolved_thought="", writer="model")
+    assert "\u2014" not in d.text

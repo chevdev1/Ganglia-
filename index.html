@@ -122,7 +122,7 @@
       <div class="nodes">
         <div>
           <div class="count" id="count"></div>
-          <div class="gridwrap"><div class="grid" id="grid" role="grid" aria-label="Node map"></div></div>
+          <div class="gridwrap"><div class="gridrows"><div class="gridlabels" aria-hidden="true"><span>frontal</span><span>parietal</span><span>temporal</span><span>occipital</span><span>cingulate</span><span>insula</span><span>hippocampus</span><span>cerebellum</span></div><div class="grid" id="grid" role="grid" aria-label="Node map"></div></div></div>
           <div class="legend"><span><i></i>Free</span><span class="c"><i></i>Claimed</span><span class="y"><i></i>Yours</span><span class="g"><i></i>Genesis relic</span></div>
         </div>
         <aside class="panel" id="panel" aria-live="polite"></aside>
@@ -141,6 +141,12 @@
           <textarea id="scn" maxlength="280" placeholder="You wake up in a city where nobody remembers your name. What do you do first?" disabled></textarea>
           <p class="err" id="err" hidden></p>
           <div class="row"><span class="chars" id="chars">0 / 280</span><button class="btn acc" id="send" disabled>Send scenario</button></div>
+        </div>
+        <div class="ideas" id="ideas">
+          <p class="ideas-h">Need an idea?</p>
+          <button type="button" class="idea">The last thing you remember before falling asleep is a sound. What is it?</button>
+          <button type="button" class="idea">A stranger hands you a key with no address. What do you do with it?</button>
+          <button type="button" class="idea">Describe the room you grew up in, but only the smells.</button>
         </div>
       </div>
       <div>
@@ -222,7 +228,7 @@
       <div class="trust-grid">
         <div class="trust-card">
           <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i></i></div><h3>$GNGL: coming soon</h3></div>
-          <p>Claiming costs a wallet signature for now. $GNGL is not live yet — no burn, no fee, until it is.</p>
+          <p>Claiming costs a wallet signature for now. $GNGL is not live yet, no burn, no fee, until it is.</p>
         </div>
         <div class="trust-card">
           <div class="card-top"><div class="nodemark" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><h3>Moderation</h3></div>
@@ -230,7 +236,7 @@
         </div>
         <div class="trust-card">
           <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i><i></i><i class="on"></i><i></i></div><h3>Writer, shown</h3></div>
-          <p><code>writer: model</code> or <code>writer: software</code> is always visible on every thought — never hidden.</p>
+          <p><code>writer: model</code> or <code>writer: software</code> is always visible on every thought, never hidden.</p>
         </div>
         <div class="trust-card">
           <div class="card-top"><div class="nodemark" aria-hidden="true"><i></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i></i></div><h3>Ownership</h3></div>
@@ -268,7 +274,7 @@
     <button type="button" class="wallet-x" id="skinx" aria-label="Close">×</button>
     <p class="kicker">cosmetic, local only</p>
     <h2 id="skintitle" class="wallet-h">brain <span>skin</span></h2>
-    <p class="wallet-tip">Purely visual — changes the mind's colours on this device. Nothing about ownership or the product changes.</p>
+    <p class="wallet-tip">Purely visual, changes the mind's colours on this device. Nothing about ownership or the product changes.</p>
     <div class="skin-list" id="skinList">
       <button type="button" class="skin-opt" data-skin="">
         <i class="skin-swatch" style="--sw:#4D7CFF"></i><span>Default</span>
@@ -333,7 +339,7 @@
         </div>
       </div>
     </div>
-    <p>Ganglia's words are written by software — a language model when a key is configured, otherwise a local writer. Shared memory is real and public. Signals shown here are software-generated. A node is a right to send scenarios, not a share of anything and not living tissue.</p>
+    <p>Ganglia's words are written by software, a language model when a key is configured, otherwise a local writer. Shared memory is real and public. Signals shown here are software-generated. A node is a right to send scenarios, not a share of anything and not living tissue.</p>
     <p>$GNGL is coming soon. No lab connection. English voice.<br>A node is a seat in a character, not an investment.</p>
     <div class="foot-wordmark" aria-hidden="true">GANGLIA</div>
   </div>

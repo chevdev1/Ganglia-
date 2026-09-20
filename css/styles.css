@@ -103,6 +103,7 @@ h1{font-family:var(--px);font-weight:400;font-size:clamp(44px,7vw,88px);line-hei
 .ticker-h{display:block;font-family:var(--px);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
 .ticker-t{margin:0;font-size:14px;color:var(--fg);min-height:3.2em}
 .ticker-t::after{content:"";display:inline-block;width:7px;height:14px;background:var(--acc);margin-left:3px;vertical-align:-2px;animation:blink .8s steps(2) infinite}
+#lb-watch{display:inline-flex;align-items:center;gap:10px}
 .livebar .dot{width:4px;height:4px;background:var(--dim);flex:none}
 .wallet-sheet{position:fixed;inset:0;z-index:40;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:24px}
 .wallet-sheet[hidden]{display:none!important}
@@ -147,7 +148,7 @@ h1{font-family:var(--px);font-weight:400;font-size:clamp(44px,7vw,88px);line-hei
 .meter b.on{background:var(--fg)}
 
 /* sections */
-section{padding:72px 0;border-top:1px solid var(--line);scroll-margin-top:64px}
+section{padding:72px 0;border-top:1px solid var(--line);scroll-margin-top:120px}
 h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0 0 12px}
 .sub{color:var(--dim);max-width:60ch;margin:0 0 40px}
 
@@ -172,7 +173,7 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .nodes{display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start}
 .gridwrap{overflow-x:auto}
 .grid{display:grid;grid-template-columns:repeat(16,minmax(28px,1fr));gap:4px;min-width:520px}
-.cell{aspect-ratio:1;border:0;padding:0;background:var(--cell);position:relative;transition:transform var(--d-1) var(--ease-snap)}
+.cell{outline:1px solid var(--line);outline-offset:-1px;aspect-ratio:1;border:0;padding:0;background:var(--cell);position:relative;transition:transform var(--d-1) var(--ease-snap)}
 .cell.claimed{background:var(--claimed)}
 .cell.yours{background:var(--acc)}
 .cell.sel{box-shadow:0 0 0 2px var(--bg),0 0 0 4px var(--acc)}
@@ -193,6 +194,9 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .pulse-card h3{font-family:var(--px);font-weight:400;font-size:14px;margin:0 0 14px}
 .pulse-mood svg{width:100%;height:auto;display:block;border:1px solid var(--line)}
 .p-l{fill:none;stroke-width:1.5}
+.p-g{stroke:var(--line);stroke-width:1}
+.p-ax{fill:var(--dim);font-size:11px;font-family:var(--mono)}
+.pulse-now{margin:10px 0 0;font-size:12px;color:var(--dim)}
 .p-c{stroke:var(--acc)}
 .p-i{stroke:var(--fg)}
 .p-w{stroke:var(--dim);stroke-dasharray:3 3}
@@ -215,6 +219,14 @@ h2{font-family:var(--px);font-weight:400;font-size:clamp(28px,4vw,40px);line-hei
 .road-h.live{color:var(--acc)}
 .road-col ul{margin:0;padding-left:18px;color:var(--dim);font-size:14px}
 .road-col li{margin-bottom:8px}
+.gridrows{display:flex;gap:12px;align-items:stretch}
+.gridrows .grid{flex:1}
+.gridlabels{display:grid;grid-template-rows:repeat(8,1fr);gap:4px;flex:none}
+.gridlabels span{display:flex;align-items:center;font-size:11px;color:var(--dim);letter-spacing:.02em}
+.ideas{margin-top:18px;display:grid;gap:8px}
+.ideas-h{margin:0;font-size:12px;color:var(--dim)}
+.idea{text-align:left;background:transparent;border:1px dashed var(--line);color:var(--dim);padding:10px 12px;font-size:13px;line-height:1.45;transition:border-color var(--d-1) var(--ease-out),color var(--d-1) var(--ease-out)}
+.idea:hover{border-color:var(--acc);color:var(--fg)}
 .histrow{display:flex;align-items:center;gap:14px;margin:-4px 0 14px}
 .verifylink{font-size:12px;color:var(--dim)}
 .verifylink:hover{color:var(--acc)}
@@ -429,6 +441,8 @@ footer p{margin:0 0 12px;max-width:60ch}
   .grid{grid-template-columns:repeat(16,minmax(14px,1fr));min-width:0;gap:2px}
   .sheet-card{padding:22px 16px 18px;width:min(440px,calc(100vw - 32px))}
   .wallet-sheet-card{padding:22px 16px 18px}
+  .gridlabels{display:none}
+  .stat:last-child:nth-child(odd){grid-column:1/-1}
   .pulse-grid,.road{grid-template-columns:1fr}
   .road-col{border-right:0;border-bottom:1px solid var(--line)} .road-col:last-child{border-bottom:0}
   .stat{border-right:0;border-bottom:1px solid var(--line)}

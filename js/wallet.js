@@ -188,7 +188,7 @@ function openWalletSheet(onPick){
     const local=document.createElement('button');
     local.type='button';
     local.className='btn ghost wallet-opt';
-    local.innerHTML='<span class="wallet-opt-title">Browser key</span><span class="wallet-opt-sub">No popup — seat stays on this device</span>';
+    local.innerHTML='<span class="wallet-opt-title">Browser key</span><span class="wallet-opt-sub">No popup, seat stays on this device</span>';
     local.onclick=()=>finish({mode:'local'});
     list.appendChild(local);
   });

@@ -23,6 +23,7 @@ const lotbuyMeta=document.getElementById('lotbuy-meta');
 const lotbuyPrice=document.getElementById('lotbuy-price');
 const lotbuyBtn=document.getElementById('lotbuy-btn');
 const pad=n=>'#'+String(n).padStart(3,'0');
+const tidy=t=>String(t).replace(/\s*[\u2014\u2013]\s*/g,', ');
 const short=a=>a&&a.length>12?a.slice(0,6)+'…'+a.slice(-4):a||'';
 
 /** Deterministic seat price for display (claim itself stays wallet-bound). */
@@ -326,10 +327,10 @@ function renderThought(t, animate, prev){
     const orig=copyBtn.textContent; copyBtn.textContent='copied';
     setTimeout(()=>{ copyBtn.textContent=orig; },1200);
   };
-  if(!animate||reduce){ p.textContent=t.text; p.classList.remove('caret'); return; }
+  if(!animate||reduce){ p.textContent=tidy(t.text); p.classList.remove('caret'); return; }
   document.getElementById('status').textContent='writing';
   let i=0;
-  const tick=setInterval(()=>{ p.textContent=t.text.slice(0,++i); if(i>=t.text.length){ p.classList.remove('caret'); clearInterval(tick); document.getElementById('status').textContent='thinking'; } }, 18);
+  const tick=setInterval(()=>{ const full=tidy(t.text); p.textContent=full.slice(0,++i); if(i>=full.length){ p.classList.remove('caret'); clearInterval(tick); document.getElementById('status').textContent='thinking'; } }, 18);
 }
 
 let lastMeters=null;
@@ -371,7 +372,7 @@ function updateTicker(list){
   const t=list.reduce((a,b)=>b.id>a.id?b:a);
   if(t.id===tickerId) return;
   tickerId=t.id;
-  const text=t.text.length>200?t.text.slice(0,197)+'…':t.text;
+  const clean=tidy(t.text), text=clean.length>200?clean.slice(0,197)+'…':clean;
   box.hidden=false;
   clearInterval(tickerTimer);
   if(reduce){ el.textContent=text; return; }
@@ -676,7 +677,7 @@ function showShareCard(nodeId){
   };
   const post=document.getElementById('sharepost');
   if(post){
-    const text=encodeURIComponent(`I hold node ${pad(nodeId)} of Ganglia — one shared mind, 128 people.`);
+    const text=encodeURIComponent(`I hold node ${pad(nodeId)} of Ganglia, one shared mind, 128 people.`);
     const url=encodeURIComponent(location.origin+location.pathname);
     post.href=`https://twitter.com/intent/tweet?text=${text}&url=${url}`;
   }
@@ -760,7 +761,7 @@ function showHist(i){
   const t=hist[i];
   if(!t){ $h('histText').textContent='No thoughts yet.'; return; }
   $h('histMeta').textContent=`thought ${t.id} · ${t.trigger}${t.node_id!=null?' · node '+pad(t.node_id):''} · ${new Date(t.created_at).toLocaleString()}${t.hash?' · #'+t.hash:''}`;
-  $h('histText').textContent=t.text;
+  $h('histText').textContent=tidy(t.text);
   const sc=$h('histScn'); sc.hidden=!t.scenario; sc.textContent=t.scenario||'';
   $h('histMeters').innerHTML=meterHtml('curiosity',t.curiosity)+meterHtml('intensity',t.intensity)+meterHtml('warmth',t.warmth);
   $h('histPos').textContent=`${i+1} / ${hist.length}`;
@@ -798,28 +799,34 @@ function closeHistory(){ clearInterval(histTimer); histTimer=null; $h('histPlay'
 /* ---------- the pulse (live analytics from /api/pulse) ---------- */
 const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 let pulseAt=0;
-function stepPath(series,key,W,H,m){
+function stepPath(series,key,W,H,m,lo,hi){
   if(series.length<2) return '';
-  const dx=(W-2*m)/(series.length-1);
+  const dx=(W-2*m-22)/(series.length-1);
   return series.map((p,i)=>{
-    const x=(m+i*dx).toFixed(1), y=(H-m-(p[key]/10)*(H-2*m)).toFixed(1);
+    const x=(m+22+i*dx).toFixed(1), y=(H-m-((p[key]-lo)/(hi-lo))*(H-2*m)).toFixed(1);
     return i?`H${x}V${y}`:`M${x} ${y}`;
   }).join('');
 }
 function renderPulse(d){
   const stats=[[d.thoughts,'thoughts written'],[d.scenarios,'scenarios sent'],[d.claimed+'/128','seats claimed'],[d.days_alive,'days alive'],[d.model_share+'%','written by the model']];
   $h('pulseStats').innerHTML=stats.map(([v,l])=>`<div class="stat"><strong>${escHtml(v)}</strong><span>${l}</span></div>`).join('');
-  const W=560,H=150,m=12;
-  $h('pulseMood').innerHTML= d.mood.length<2
-    ? '<p class="wallet-tip">Not enough thoughts yet.</p>'
-    : `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curiosity, intensity and warmth over the last thoughts"><path class="p-l p-w" d="${stepPath(d.mood,'warmth',W,H,m)}"/><path class="p-l p-i" d="${stepPath(d.mood,'intensity',W,H,m)}"/><path class="p-l p-c" d="${stepPath(d.mood,'curiosity',W,H,m)}"/></svg>`;
+  const W=560,H=200,m=14;
+  if(d.mood.length<2){ $h('pulseMood').innerHTML='<p class="wallet-tip">Not enough thoughts yet.</p>'; }
+  else{
+    const vals=d.mood.flatMap(p=>[p.curiosity,p.intensity,p.warmth]);
+    let lo=Math.min(...vals)-1, hi=Math.max(...vals)+1;
+    if(hi-lo<4){ lo-=1; hi+=1; }
+    lo=Math.max(0,lo); hi=Math.min(10,hi);
+    const last=d.mood[d.mood.length-1];
+    $h('pulseMood').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curiosity, intensity and warmth over the last thoughts"><text class="p-ax" x="4" y="${m+4}">${hi}</text><text class="p-ax" x="4" y="${H-m+4}">${lo}</text><line class="p-g" x1="26" y1="${m}" x2="${W-m}" y2="${m}"/><line class="p-g" x1="26" y1="${H-m}" x2="${W-m}" y2="${H-m}"/><path class="p-l p-w" d="${stepPath(d.mood,'warmth',W,H,m,lo,hi)}"/><path class="p-l p-i" d="${stepPath(d.mood,'intensity',W,H,m,lo,hi)}"/><path class="p-l p-c" d="${stepPath(d.mood,'curiosity',W,H,m,lo,hi)}"/></svg><p class="pulse-now">now: curiosity ${last.curiosity}, intensity ${last.intensity}, warmth ${last.warmth}</p>`;
+  }
   const max=Math.max(1,...d.regions.map(r=>r.scenarios));
   $h('pulseRegions').innerHTML=d.regions.map(r=>{
     const on=Math.round(r.scenarios/max*20);
-    return `<div class="rrow"><span>${escHtml(r.region)}</span><div class="meter">${Array.from({length:20},(_,k)=>`<b class="${k<on?'on':''}"></b>`).join('')}</div><em>${r.scenarios} scenarios, ${r.claimed}/16 seats</em></div>`;
+    return `<div class="rrow"><span>${escHtml(r.region)}</span><div class="meter">${Array.from({length:20},(_,k)=>`<b class="${k<on?'on':''}"></b>`).join('')}</div><em>${r.scenarios} scenario${r.scenarios===1?'':'s'}, ${r.claimed}/16 seats</em></div>`;
   }).join('');
   $h('pulseTop').innerHTML= d.top.length
-    ? d.top.map(t=>`<li><a href="#node-${String(t.node_id).padStart(3,'0')}">${pad(t.node_id)}</a>${t.alias?`<b>${escHtml(t.alias)}</b>`:''}${t.relics.map(r=>`<span class="tag">${escHtml(RELIC_LABEL[r]||r)}</span>`).join('')}<span>${t.scenarios} scenarios</span></li>`).join('')
+    ? d.top.map(t=>`<li><a href="#node-${String(t.node_id).padStart(3,'0')}">${pad(t.node_id)}</a>${t.alias?`<b>${escHtml(t.alias)}</b>`:''}${t.relics.map(r=>`<span class="tag">${escHtml(RELIC_LABEL[r]||r)}</span>`).join('')}<span>${t.scenarios} scenario${t.scenarios===1?'':'s'}</span></li>`).join('')
     : '<li>No scenarios yet. The first voice is still free.</li>';
 }
 async function loadPulse(){
@@ -828,3 +835,9 @@ async function loadPulse(){
 }
 setTimeout(loadPulse, 1200);
 setInterval(loadPulse, 30000);
+
+
+/* scenario idea chips fill the composer */
+document.querySelectorAll('#ideas .idea').forEach(b=>{
+  b.onclick=()=>{ scn.value=b.textContent; scn.oninput(); if(!scn.disabled) scn.focus(); };
+});

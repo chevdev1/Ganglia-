@@ -26,6 +26,26 @@ _MEMORY_KEEP = 0.35
 _DELTA_KEYS = ("curiosity", "intensity", "warmth", "focus", "restlessness")
 
 
+_DASHES = re.compile(r"\s*[\u2014\u2013]\s*")
+THOUGHT_MAX_CHARS = 460
+
+
+def polish_thought(text: str, limit: int = THOUGHT_MAX_CHARS) -> str:
+    """House style for every thought: no long dashes, and short (the character is quiet).
+
+    Long thoughts are cut at the last full sentence that fits, else at a word boundary.
+    """
+
+    text = _DASHES.sub(", ", " ".join(text.split())).replace(",,", ",").replace(", .", ".")
+    if len(text) <= limit:
+        return text
+    window = text[:limit]
+    end = max(window.rfind(". "), window.rfind("? "), window.rfind("! "))
+    if end >= limit * 0.4:
+        return window[: end + 1]
+    return window.rsplit(" ", 1)[0].rstrip(",;:") + "…"
+
+
 @dataclass
 class ThoughtDraft:
     """One generated thought plus updated meters and memory summary."""
@@ -39,6 +59,9 @@ class ThoughtDraft:
     summary: str
     unresolved_thought: str
     writer: str
+
+    def __post_init__(self) -> None:
+        self.text = polish_thought(self.text)
 
 
 def clamp(value: int, low: int = 1, high: int = 10) -> int:

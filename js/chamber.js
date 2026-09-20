@@ -128,7 +128,7 @@ function renderTraces(traces){
   if(!el) return;
   el.innerHTML='';
   if(!traces||!traces.length){
-    el.innerHTML='<p class="sub">Nothing yet. Send a scenario — the mind answers here.</p>';
+    el.innerHTML='<p class="sub">Nothing yet. Send a scenario and the mind answers here.</p>';
     return;
   }
   traces.forEach(t=>{
