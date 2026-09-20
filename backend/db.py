@@ -61,6 +61,10 @@ def _migrate(engine: Engine) -> None:
             statements.append("ALTER TABLE outputs ADD COLUMN hidden INTEGER NOT NULL DEFAULT 0")
         if "voice_path" not in cols:
             statements.append("ALTER TABLE outputs ADD COLUMN voice_path VARCHAR(255) DEFAULT ''")
+        if "prev_hash" not in cols:
+            statements.append("ALTER TABLE outputs ADD COLUMN prev_hash VARCHAR(64)")
+        if "hash" not in cols:
+            statements.append("ALTER TABLE outputs ADD COLUMN hash VARCHAR(64)")
     if "users" in inspector.get_table_names():
         user_cols = {column["name"] for column in inspector.get_columns("users")}
         if "alias" not in user_cols:

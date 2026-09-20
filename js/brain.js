@@ -7,7 +7,7 @@
 const brain=(()=>{
   const cv=document.getElementById('mindcv');
   if(!cv){
-    return {start(){},target(){},ripple(){},stimulate(){},colors(){}};
+    return {start(){},target(){},ripple(){},stimulate(){},colors(){},setMood(){}};
   }
   const g=cv.getContext('2d');
   const W=320,H=240; cv.width=W; cv.height=H;
@@ -205,9 +205,11 @@ const brain=(()=>{
     g.putImageData(img,0,0);
     requestAnimationFrame(frame);
   }
+  let moodInt=1800;
+  function setMood(m){ if(!m) return; moodInt=Math.max(700,Math.min(3200,Math.round(2800-(m.intensity??4)*200-(m.restlessness??4)*40))); }
   function start(){ colors(); hud(); requestAnimationFrame(frame);
     setTimeout(()=>{ let c=0,bx=-1; owners.forEach((o,i)=>{ if(o&&NODE[i].nx<bx+0){} if(o&&-NODE[i].nx>bx&&NODE[i].ny>0){bx=-NODE[i].nx;c=i;} }); target(c,true); },700);
-    if(!reduce) setInterval(()=>{ if(!document.hidden) stimulate(r()*128|0,2); },1800); }
-  return {start,target,ripple,stimulate,colors};
+    if(!reduce){ const tick=()=>{ if(!document.hidden) stimulate(r()*128|0,2); setTimeout(tick,moodInt); }; setTimeout(tick,moodInt); } }
+  return {start,target,ripple,stimulate,colors,setMood};
 })();
 

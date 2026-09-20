@@ -215,6 +215,15 @@ function themeWipe(applyTheme, {duration=400}={}){
    to stay soft. startAmbient() is safe to call repeatedly: it always retries ac.resume() (needed
    because audio can only truly start inside a real user gesture — click/key/touch, not scroll). */
 let _ambientCtx=null, _ambientNodes=null, _ambientTimer=null, _ambientOn=false;
+let _mood={curiosity:6,intensity:4,warmth:6};
+/* the ambient follows the mind's state: intensity speeds the notes, curiosity lifts the pitch,
+   warmth opens the filter. Called whenever the meters change. */
+function setAmbientMood(m){
+  _mood={..._mood,...m};
+  if(_ambientNodes&&_ambientNodes.warmth){
+    _ambientNodes.warmth.frequency.setTargetAtTime(900+_mood.warmth*190,_ambientCtx.currentTime,1.5);
+  }
+}
 function startAmbient(){
   _ambientCtx = _ambientCtx || new (window.AudioContext||window.webkitAudioContext)();
   const ac=_ambientCtx;
@@ -248,8 +257,9 @@ function startAmbient(){
   function pluck(){
     if (!_ambientOn) return;
     step=(step+1+((Math.random()*2)|0))%scale.length;
-    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=scale[step];
-    const filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=1400;
+    const oct=_mood.curiosity>=8&&Math.random()<.35?2:(_mood.curiosity<=3?.5:1);
+    const o=ac.createOscillator(); o.type='triangle'; o.frequency.value=scale[step]*oct;
+    const filt=ac.createBiquadFilter(); filt.type='lowpass'; filt.frequency.value=800+_mood.warmth*160;
     const g=ac.createGain(); g.gain.value=0;
     o.connect(filt); filt.connect(g);
     if (ac.createStereoPanner){
@@ -260,10 +270,11 @@ function startAmbient(){
     g.gain.linearRampToValueAtTime(0.05, t+0.15);
     g.gain.exponentialRampToValueAtTime(0.0001, t+3.2);
     o.start(t); o.stop(t+3.3);
-    _ambientTimer=setTimeout(pluck, 2600+Math.random()*3200);
+    _ambientTimer=setTimeout(pluck, Math.max(1500,5200-_mood.intensity*320+Math.random()*2400));
   }
   _ambientTimer=setTimeout(pluck, 2200+Math.random()*2000);
-  _ambientNodes={master, bass, bassLfo, fifth};
+  _ambientNodes={master, warmth, bass, bassLfo, fifth};
+  setAmbientMood({});
 }
 function stopAmbient(){
   if (!_ambientOn) return;

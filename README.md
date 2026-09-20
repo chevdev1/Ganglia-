@@ -51,6 +51,13 @@ Set in `.env` before shipping:
 
 Off by default. Set `CHAIN_ID`, `CHAIN_RPC_URL`, `SALE_CONTRACT_ADDRESS` and `NODE_PRICE_WEI` (see `.env.example`) and the site switches from free claim to on-chain buying: the wallet is asked to add/switch the network, sends `SALE_FUNCTION(nodeId)` with the price, and the server verifies the tx over RPC (sender, contract, calldata, value, status) before assigning the node. Each tx hash can be used once. Free `/claim` closes while the sale is live. Only real wallets can buy (not the browser-key mode).
 
+## Live features
+
+- `/api/stream` (SSE) pushes ticks so the page updates instantly; `POST /api/presence` is a 20s heartbeat from connected holders. Presence is in-memory, single instance.
+- Archive is hash-chained (`backend/services/ledger.py`): `/api/verify` recomputes it, `hidden` is not hashed. Existing rows are chained on startup.
+- `/api/history` feeds the time machine; `/t/{id}`, `/n/{id}` are share pages, `/api/card/{thought|node}/{id}.png` are Pillow-drawn cards (`backend/services/cards.py`).
+- Ambient sound and brain signal rate follow the mind's meters (`setAmbientMood`, `brain.setMood`).
+
 ## Lore
 
 `CONSTITUTION.md` is the character. `LORE.md` is the short public version. Scenarios colour the next thought. They do not erase the rest, and they do not override the constitution.

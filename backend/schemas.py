@@ -66,6 +66,7 @@ class ThoughtOut(BaseModel):
     created_at: datetime
     voice_url: str | None = None
     hidden: bool = False
+    hash: str | None = None
 
 
 class CharacterStateOut(BaseModel):
@@ -93,6 +94,8 @@ class StateOut(BaseModel):
     writer: str
     summary: str
     model_ready: bool = False
+    present: list[int] = []
+    watching: int = 0
 
 
 class ScenarioIn(BaseModel):

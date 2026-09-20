@@ -53,7 +53,7 @@
         <a class="btn ghost" href="/me.html" style="text-decoration:none">Open cabinet</a>
       </div>
       <p class="livebar" id="livebar">
-        <span id="lb-claimed">0/128 claimed</span><i class="dot"></i><span id="lb-scn">0 scenarios</span><i class="dot"></i><span id="lb-last">no thoughts yet</span>
+        <span id="lb-claimed">0/128 claimed</span><i class="dot"></i><span id="lb-scn">0 scenarios</span><i class="dot"></i><span id="lb-last">no thoughts yet</span><span id="lb-watch" hidden></span>
       </p>
       <div class="ticker" id="ticker" hidden>
         <span class="ticker-h">the mind, just now</span>
@@ -152,6 +152,7 @@
           <button type="button" class="chip" data-filter="autonomous">Autonomous</button>
           <button type="button" class="chip" data-filter="mine">My node</button>
         </div>
+        <div class="histrow"><button type="button" class="chip" id="histBtn">Time machine</button><a class="verifylink" href="/api/verify" target="_blank" rel="noopener">verify archive</a></div>
         <div class="feed" id="feed"></div>
       </div>
     </div>
@@ -183,6 +184,27 @@
     </div>
   </section>
 </main>
+
+<div class="sheet" id="historysheet" hidden>
+  <div class="sheet-card hist-card" role="dialog" aria-labelledby="histtitle">
+    <button type="button" class="wallet-x" id="histx" aria-label="Close">×</button>
+    <p class="kicker">time machine</p>
+    <h2 id="histtitle" class="wallet-h">replay the <span>mind</span></h2>
+    <input type="range" id="histRange" min="0" max="0" value="0" aria-label="Scrub through thoughts">
+    <div class="hist-ctl">
+      <button type="button" class="chip" id="histPrev">Prev</button>
+      <button type="button" class="chip" id="histPlay">Play</button>
+      <button type="button" class="chip" id="histNext">Next</button>
+      <span class="chars" id="histPos"></span>
+    </div>
+    <p class="hist-meta" id="histMeta"></p>
+    <p class="hist-scn" id="histScn" hidden></p>
+    <p class="hist-text" id="histText"></p>
+    <div class="states hist-meters" id="histMeters"></div>
+    <div id="histInfluence" class="hist-inf"></div>
+    <p class="wallet-tip" id="histInfNote"></p>
+  </div>
+</div>
 
 <div class="sheet" id="skinsheet" hidden>
   <div class="sheet-card" role="dialog" aria-labelledby="skintitle">

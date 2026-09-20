@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from backend.models import MemoryState, Node, Output, Scenario
 from backend.schemas import ThoughtOut
+from backend.services import ledger
 from backend.services.neural import SignalFeatures
 from backend.services.writer import ThoughtDraft
 
@@ -106,6 +107,7 @@ def serialize_thought(row: Output) -> ThoughtOut:
         created_at=row.created_at,
         voice_url=voice or None,
         hidden=bool(row.hidden),
+        hash=(row.hash or "")[:12] or None,
     )
 
 
@@ -160,6 +162,7 @@ def persist_thought(
     memory.unresolved_thought = draft.unresolved_thought
     memory.cycle += 1
     session.flush()
+    ledger.seal(session, output)
     return output
 
 

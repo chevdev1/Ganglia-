@@ -8,6 +8,7 @@ const state={curiosity:7,intensity:4,warmth:6,focus:5,restlessness:4};
 const owners=Array.from({length:128},()=>null);
 const scenarioCounts=Array.from({length:128},()=>0);
 const nodeRelics=Array.from({length:128},()=>[]);
+let presentNodes=new Set(), sseOk=false;
 const RELIC_LABEL={genesis:'Genesis','long-standing':'Long standing',voice:'Voice'};
 let mine=null, selected=null, connected=false, address='', claimInProgress=false;
 let token=localStorage.getItem('ganglia_token')||'';
@@ -154,7 +155,7 @@ function renderGrid(){
   grid.innerHTML='';
   owners.forEach((o,i)=>{
     const b=document.createElement('button');
-    b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'')+(nodeRelics[i].includes('genesis')?' genesis':'');
+    b.className='cell'+(i===mine?' yours':o?' claimed':'')+(i===selected?' sel':'')+(nodeRelics[i].includes('genesis')?' genesis':'')+(presentNodes.has(i)?' present':'');
     b.setAttribute('aria-label',`Node ${i}, ${i===mine?'yours':o?'claimed':'free'}`);
     b.dataset.i=i; b.onclick=()=>{selected=i;renderGrid();renderPanel();brain.target(i);};
     b.onmouseenter=()=>{ brain.target(i); blip(1400,0.02,0.03); };
@@ -173,12 +174,18 @@ function renderPanel(){
   const i=selected,o=owners[i], alias=window.nodeAliases&&window.nodeAliases[i];
   const status=i===mine?'Yours':o?'Claimed':'Free';
   const who=i===mine?(window.myAlias||short(address)): (alias||o||'nobody yet');
-  panel.innerHTML=`<div class="id">${pad(i)}<button type="button" class="idcopy" id="idcopy" aria-label="Copy node id">copy</button></div>
+  panel.innerHTML=`<div class="id">${pad(i)}<button type="button" class="idcopy" id="idcopy" aria-label="Copy node id">copy</button><button type="button" class="idcopy" id="idshare" aria-label="Copy share link">share</button></div>
   <dl><dt>Status</dt><dd>${status}</dd><dt>Region</dt><dd>${labels[Math.floor(i/16)]}</dd>  <dt>Owner</dt><dd>${who}</dd><dt>Scenarios</dt><dd>${scenarioCounts[i]||0}</dd>${nodeRelics[i].length?`<dt>Relics</dt><dd>${nodeRelics[i].map(r=>RELIC_LABEL[r]||r).join(', ')}</dd>`:''}</dl>
   ${ i===mine ? `<a class="btn acc" href="/me.html" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px">Open cabinet</a><a class="btn ghost" href="#archive" style="display:block;text-align:center;text-decoration:none">Send a scenario</a>`
     : o ? `<button class="btn ghost" disabled>Already claimed</button>`
     : `<button class="btn" id="claim">${connected?'Claim this node':'Connect wallet to claim'}</button><p class="note">One owner per node, tied to your wallet. Reconnect later and this seat is still yours.</p>`}`;
   const c=document.getElementById('claim'); if(c) c.onclick=()=>{ claimNode(); };
+  const ids=document.getElementById('idshare');
+  if(ids) ids.onclick=()=>{
+    navigator.clipboard?.writeText(location.origin+'/n/'+String(i).padStart(3,'0')).catch(()=>{});
+    const orig=ids.textContent; ids.textContent='link copied';
+    setTimeout(()=>{ ids.textContent=orig; },1200);
+  };
   const idc=document.getElementById('idcopy');
   if(idc) idc.onclick=()=>{
     navigator.clipboard?.writeText(pad(i)).catch(()=>{});
@@ -227,6 +234,8 @@ function applyMeters(s){
   if(s.focus!=null) state.focus=s.focus;
   if(s.restlessness!=null) state.restlessness=s.restlessness;
   renderStates();
+  if(typeof setAmbientMood==='function') setAmbientMood(state);
+  if(brain.setMood) brain.setMood(state);
 }
 
 function applyWorld(data){
@@ -247,6 +256,7 @@ function applyWorld(data){
     const latest=data.thoughts.reduce((a,b)=> (!a||(b.created_at&&b.created_at>a))?b.created_at:a, null);
     if(latest) lastThoughtAt=latest;
   }
+  presentNodes=new Set(data.present||[]); paintWatching(data.watching);
   renderLiveBar();
   if(data.me){
     connected=true; address=data.me.address; mine=data.me.node_id; window.myAlias=data.me.alias||'';
@@ -311,7 +321,7 @@ function renderThought(t, animate, prev){
   el.querySelector('.speak[data-speak]').onclick=()=>speakThought(t);
   const copyBtn=el.querySelector('.speak[data-copy]');
   copyBtn.onclick=()=>{
-    const url=location.href.split('#')[0]+'#t'+t.id;
+    const url=location.origin+'/t/'+t.id;
     navigator.clipboard?.writeText(url).catch(()=>{});
     const orig=copyBtn.textContent; copyBtn.textContent='copied';
     setTimeout(()=>{ copyBtn.textContent=orig; },1200);
@@ -675,13 +685,111 @@ function showShareCard(nodeId){
   sheet.onclick=e=>{ if(e.target===sheet) close(); };
 }
 
-setInterval(()=>{ loadState(true).catch(()=>{}); }, 3000);
+let pollN=0;
+setInterval(()=>{ pollN++; if(sseOk && pollN%6) return; loadState(true).catch(()=>{}); }, 3000);
 
 drawLogo(); renderStates(); renderGrid(); selected=null; renderPanel(); paintConnect();
 brain.start(); window.brain=brain;
 loadSaleCfg();
+startStream();
+setTimeout(openFromHash, 900);
+addEventListener('hashchange', openFromHash);
+setInterval(()=>{ if(connected&&mine!==null) api('/api/presence',{method:'POST', body:'{}'}).then(d=>{ presentNodes=new Set(d.present||[]); renderGrid(); }).catch(()=>{}); }, 20000);
 if(location.protocol==='file:'){
   showErr('Open the app through the Ganglia server (uvicorn), not as a local file.');
 }else{
   loadState(false).catch(err=>showErr(err.message||'Could not reach the Ganglia server. Run it with uvicorn.'));
 }
+
+
+/* ---------- live stream, presence, deep links ---------- */
+function paintWatching(n){
+  const w=document.getElementById('lb-watch');
+  if(!w) return;
+  if(n>1){ w.hidden=false; w.innerHTML='<i class="dot"></i> '+(n|0)+' watching'; }
+  else w.hidden=true;
+}
+function startStream(){
+  if(!window.EventSource||location.protocol==='file:') return;
+  const es=new EventSource('/api/stream');
+  es.onopen=()=>{ sseOk=true; };
+  es.onerror=()=>{ sseOk=false; };
+  es.onmessage=e=>{
+    try{
+      const d=JSON.parse(e.data);
+      presentNodes=new Set(d.present||[]);
+      paintWatching(d.watching);
+      grid.querySelectorAll('.cell').forEach((c,i)=>c.classList.toggle('present', presentNodes.has(i)));
+      if(d.last_id>lastThoughtId) loadState(true).catch(()=>{});
+    }catch(_e){}
+  };
+}
+function openFromHash(){
+  const m=/^#node-(\d{1,3})$/.exec(location.hash);
+  if(!m) return;
+  const i=+m[1];
+  if(i<0||i>127) return;
+  selected=i; renderGrid(); renderPanel(); brain.target(i);
+  const sec=document.getElementById('nodes'); if(sec) sec.scrollIntoView();
+}
+
+/* ---------- time machine + influence graph ---------- */
+let hist=[], histTimer=null;
+const $h=id=>document.getElementById(id);
+function meterHtml(name,v){
+  return `<div class="state"><span>${name}</span><div class="meter">${Array.from({length:10},(_,k)=>`<b class="${k<v?'on':''}"></b>`).join('')}</div></div>`;
+}
+function drawInfluence(i){
+  const t=hist[i], prior=hist.slice(Math.max(0,i-24), i);
+  const W=560, H=120, m=18, tx=W-m-6, ty=H/2;
+  const step=prior.length>1?(tx-m-40)/(prior.length-1):0;
+  let out='';
+  prior.forEach((p,k)=>{
+    const x=m+k*step, y=ty+((k%2)?20:-20);
+    const cls=p.trigger==='scenario'?'inf-s':'inf-a';
+    out+=`<path class="inf-l ${cls}" d="M${x} ${y} Q${(x+tx)/2} ${ty} ${tx} ${ty}"/>`;
+    out+=`<circle class="inf-d ${cls}" cx="${x}" cy="${y}" r="4"><title>thought ${p.id}${p.node_id!=null?' (node '+pad(p.node_id)+')':''}</title></circle>`;
+  });
+  out+=`<circle class="inf-t" cx="${tx}" cy="${ty}" r="8"><title>thought ${t.id}</title></circle>`;
+  $h('histInfluence').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Thoughts that fed into this one">${out}</svg>`;
+  $h('histInfNote').textContent=prior.length
+    ? `Each thought is written from a running summary plus the last 24 thoughts. Here: the ${prior.length} before this one. Blue = written after a scenario.`
+    : 'This is the first thought. Nothing came before it.';
+}
+function showHist(i){
+  const t=hist[i];
+  if(!t){ $h('histText').textContent='No thoughts yet.'; return; }
+  $h('histMeta').textContent=`thought ${t.id} · ${t.trigger}${t.node_id!=null?' · node '+pad(t.node_id):''} · ${new Date(t.created_at).toLocaleString()}${t.hash?' · #'+t.hash:''}`;
+  $h('histText').textContent=t.text;
+  const sc=$h('histScn'); sc.hidden=!t.scenario; sc.textContent=t.scenario||'';
+  $h('histMeters').innerHTML=meterHtml('curiosity',t.curiosity)+meterHtml('intensity',t.intensity)+meterHtml('warmth',t.warmth);
+  $h('histPos').textContent=`${i+1} / ${hist.length}`;
+  drawInfluence(i);
+  if(t.node_id!=null){ brain.target(t.node_id); brain.stimulate(t.node_id,2); } else brain.ripple();
+}
+async function openHistory(){
+  const sheet=$h('historysheet'); if(!sheet) return;
+  sheet.hidden=false;
+  try{ hist=await api('/api/history?limit=200'); }catch(_e){ hist=[]; }
+  const r=$h('histRange'); r.max=Math.max(0,hist.length-1); r.value=r.max; showHist(+r.value);
+}
+function closeHistory(){ clearInterval(histTimer); histTimer=null; $h('histPlay').textContent='Play'; $h('historysheet').hidden=true; }
+(function(){
+  const btn=$h('histBtn'); if(!btn) return;
+  btn.onclick=openHistory;
+  $h('histx').onclick=closeHistory;
+  $h('historysheet').onclick=e=>{ if(e.target===$h('historysheet')) closeHistory(); };
+  $h('histRange').oninput=e=>showHist(+e.target.value);
+  $h('histPrev').onclick=()=>{ const r=$h('histRange'); r.value=Math.max(0,+r.value-1); showHist(+r.value); };
+  $h('histNext').onclick=()=>{ const r=$h('histRange'); r.value=Math.min(+r.max,+r.value+1); showHist(+r.value); };
+  $h('histPlay').onclick=()=>{
+    if(histTimer){ clearInterval(histTimer); histTimer=null; $h('histPlay').textContent='Play'; return; }
+    const r=$h('histRange'); if(+r.value>=+r.max) r.value=0;
+    $h('histPlay').textContent='Pause';
+    histTimer=setInterval(()=>{
+      if(+r.value>=+r.max){ closeHistoryPlay(); return; }
+      r.value=+r.value+1; showHist(+r.value);
+    },1400);
+  };
+  function closeHistoryPlay(){ clearInterval(histTimer); histTimer=null; $h('histPlay').textContent='Play'; }
+})();

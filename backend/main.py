@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import html
+import json
 import logging
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,7 +14,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.exception_handlers import http_exception_handler
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -67,7 +70,7 @@ from backend.services.memory import (
     serialize_thought,
     short_address,
 )
-from backend.services import chain
+from backend.services import cards, chain, ledger
 from backend.services.mind import MindRuntime, claim_node, seed_genesis
 from backend.services.moderation import moderate_scenario
 
@@ -88,6 +91,7 @@ async def lifespan(_app: FastAPI):
     factory = session_factory()
     with factory() as session:
         seed_genesis(session, mind)
+        ledger.backfill(session)
         session.commit()
     mind.start()
     yield
@@ -140,6 +144,193 @@ def _nodes(session: Session) -> list[NodeOut]:
         )
         for node in nodes
     ]
+
+
+# ---- live presence, tamper-evident archive, history, share cards -----------------
+
+_seen: dict[int, float] = {}  # node_id -> last heartbeat (unix seconds), in memory
+_watching = 0  # open /api/stream connections
+_head_cache: tuple[float, int, int] = (0.0, 0, 0)  # (checked_at, last_thought_id, cycle)
+PRESENCE_TTL = 45
+
+
+def _present_nodes() -> list[int]:
+    cutoff = time.time() - PRESENCE_TTL
+    return sorted(node for node, seen in _seen.items() if seen >= cutoff)
+
+
+def _head() -> tuple[int, int]:
+    """Newest thought id and cycle. Cached ~1s so many stream clients share one query."""
+
+    global _head_cache
+    now = time.time()
+    if now - _head_cache[0] > 1.0:
+        with session_factory()() as session:
+            last = session.scalar(select(func.max(Output.id))) or 0
+            memory = ensure_world(session)
+            _head_cache = (now, int(last), int(memory.cycle))
+    return _head_cache[1], _head_cache[2]
+
+
+@app.post("/api/presence")
+def presence(user: UserDep) -> dict[str, list[int]]:
+    """Heartbeat from a connected seat holder so others see their node lit."""
+
+    if user.node_id is not None:
+        _seen[user.node_id] = time.time()
+    return {"present": _present_nodes()}
+
+
+@app.get("/api/stream")
+async def stream(request: Request) -> StreamingResponse:
+    """Server-sent events: pushes a tick when the archive or presence changes."""
+
+    async def events():
+        global _watching
+        _watching += 1
+        last_payload = ""
+        idle = 0
+        try:
+            while not await request.is_disconnected():
+                thought_id, cycle = _head()
+                payload = json.dumps(
+                    {"last_id": thought_id, "cycle": cycle, "present": _present_nodes(), "watching": _watching},
+                    separators=(",", ":"),
+                )
+                if payload != last_payload:
+                    last_payload, idle = payload, 0
+                    yield f"data: {payload}\n\n"
+                else:
+                    idle += 1
+                    if idle % 10 == 0:
+                        yield ": keepalive\n\n"
+                await asyncio.sleep(1.5)
+        finally:
+            _watching = max(0, _watching - 1)
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/api/verify")
+def verify_archive(session: SessionDep) -> dict[str, object]:
+    """Recompute the whole hash chain. ok=false names the first thought that no longer matches."""
+
+    return ledger.verify(session)
+
+
+@app.get("/api/history", response_model=list[ThoughtOut])
+def history(session: SessionDep, limit: int = Query(200, ge=1, le=500)) -> list[ThoughtOut]:
+    """Public thoughts oldest-first, for the time-machine scrubber."""
+
+    rows = load_thoughts(session, limit=limit)
+    return [serialize_thought(row) for row in reversed(rows)]
+
+
+def _origin(request: Request) -> str:
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host", request.url.netloc)
+    return f"{proto}://{host}"
+
+
+def _share_page(*, title: str, desc: str, image: str, url: str, dest: str) -> HTMLResponse:
+    t, d, i, u, g = (html.escape(v, quote=True) for v in (title, desc, image, url, dest))
+    body = (
+        '<!doctype html><html lang="en"><head><meta charset="utf-8">'
+        f'<title>{t}</title><meta name="description" content="{d}">'
+        f'<meta property="og:title" content="{t}"><meta property="og:description" content="{d}">'
+        f'<meta property="og:type" content="article"><meta property="og:url" content="{u}">'
+        f'<meta property="og:image" content="{i}"><meta name="twitter:card" content="summary_large_image">'
+        f'<meta name="twitter:image" content="{i}"><meta http-equiv="refresh" content="0;url={g}">'
+        f'</head><body><p><a href="{g}">Open in Ganglia</a></p></body></html>'
+    )
+    return HTMLResponse(body)
+
+
+@app.get("/t/{thought_id}")
+def share_thought(thought_id: int, request: Request, session: SessionDep) -> HTMLResponse:
+    """Shareable link for one thought (rich preview, then opens the site)."""
+
+    row = session.get(Output, thought_id)
+    if row is None or row.hidden:
+        raise HTTPException(404, "No such thought.")
+    origin = _origin(request)
+    text = row.text if len(row.text) <= 200 else row.text[:197] + "…"
+    return _share_page(
+        title=f"Ganglia thought {row.id}",
+        desc=text,
+        image=f"{origin}/api/card/thought/{row.id}.png",
+        url=f"{origin}/t/{row.id}",
+        dest=f"/#t{row.id}",
+    )
+
+
+@app.get("/n/{node_id}")
+def share_node(node_id: int, request: Request) -> HTMLResponse:
+    """Shareable link for one node."""
+
+    if not 0 <= node_id <= 127:
+        raise HTTPException(404, "No such node.")
+    origin = _origin(request)
+    myth, blurb = REGION_MYTH[region_for(node_id)]
+    return _share_page(
+        title=f"Ganglia node {node_id:03d}",
+        desc=f"{region_for(node_id)}, {myth}. {blurb}",
+        image=f"{origin}/api/card/node/{node_id}.png",
+        url=f"{origin}/n/{node_id}",
+        dest=f"/#node-{node_id:03d}",
+    )
+
+
+_card_cache: dict[str, bytes] = {}
+
+
+def _cached(key: str, make) -> Response:
+    if key not in _card_cache:
+        if len(_card_cache) > 300:
+            _card_cache.clear()
+        _card_cache[key] = make()
+    return Response(_card_cache[key], media_type="image/png", headers={"Cache-Control": "public, max-age=300"})
+
+
+@app.get("/api/card/thought/{thought_id}.png")
+def card_thought(thought_id: int, session: SessionDep) -> Response:
+    """1200x630 share card for a public thought."""
+
+    row = session.get(Output, thought_id)
+    if row is None or row.hidden:
+        raise HTTPException(404, "No such thought.")
+    return _cached(
+        f"t{row.id}",
+        lambda: cards.thought_card(
+            thought_id=row.id, text=row.text, node_id=row.node_id, writer=row.writer, trigger=row.trigger_type,
+            curiosity=row.curiosity, intensity=row.intensity, warmth=row.warmth, digest=(row.hash or "")[:12] or None,
+        ),
+    )
+
+
+@app.get("/api/card/node/{node_id}.png")
+def card_node(node_id: int, session: SessionDep) -> Response:
+    """1200x630 share card for a node. Cache key includes status and relics since they change."""
+
+    if not 0 <= node_id <= 127:
+        raise HTTPException(404, "No such node.")
+    nodes = session.scalars(select(Node).order_by(Node.id)).all()
+    node = next((n for n in nodes if n.id == node_id), None)
+    badges = relics_for([(n.id, n.claimed_at, n.scenario_count) for n in nodes], datetime.now(timezone.utc)).get(node_id, [])
+    region = region_for(node_id)
+    myth, blurb = REGION_MYTH[region]
+    status = "claimed" if node is not None and node.owner_id is not None else "free"
+    count = node.scenario_count if node else 0
+    return _cached(
+        f"n{node_id}:{status}:{','.join(badges)}:{count}",
+        lambda: cards.node_card(
+            node_id=node_id, region=region, myth=myth, blurb=blurb, status=status, relics=badges, scenarios=count,
+        ),
+    )
 
 
 @app.get("/api/health")
@@ -302,6 +493,8 @@ def state(session: SessionDep, user: MaybeUser) -> StateOut:
         writer=mind.writer_name,
         summary=memory.summary_text,
         model_ready=bool(settings.openai_api_key.strip()),
+        present=_present_nodes(),
+        watching=_watching,
     )
 
 
