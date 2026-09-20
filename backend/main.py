@@ -64,6 +64,7 @@ from backend.services.chamber import (
     wallet_sigil,
 )
 from backend.services.memory import (
+    REGIONS,
     ensure_world,
     load_thoughts,
     region_for,
@@ -105,6 +106,33 @@ app = FastAPI(
     openapi_url=None if _PRODUCTION else "/api/openapi.json",
     lifespan=lifespan,
 )
+class RevalidateStatic:
+    """Pure-ASGI middleware: pages, scripts and styles must be revalidated on every load.
+
+    Without a Cache-Control header browsers cache these heuristically, so visitors kept
+    seeing an old site after each deploy. ETag makes revalidation a cheap 304. It never
+    touches /api or streaming responses.
+    """
+
+    def __init__(self, inner):
+        self.inner = inner
+
+    async def __call__(self, scope, receive, send):
+        path = scope.get("path", "")
+        if scope["type"] != "http" or not (path == "/" or path.endswith((".html", ".js", ".css"))):
+            return await self.inner(scope, receive, send)
+
+        async def send_wrapper(message):
+            if message["type"] == "http.response.start":
+                headers = [(k, v) for k, v in message.get("headers", []) if k.lower() != b"cache-control"]
+                headers.append((b"cache-control", b"no-cache"))
+                message["headers"] = headers
+            await send(message)
+
+        return await self.inner(scope, receive, send_wrapper)
+
+
+app.add_middleware(RevalidateStatic)
 SessionDep = Annotated[Session, Depends(get_session)]
 UserDep = Annotated[User, Depends(current_user)]
 MaybeUser = Annotated[User | None, Depends(optional_user)]
@@ -213,6 +241,52 @@ async def stream(request: Request) -> StreamingResponse:
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/pulse")
+def pulse(session: SessionDep) -> dict[str, object]:
+    """Live numbers for the Pulse section, all computed from real data."""
+
+    nodes = session.scalars(select(Node).order_by(Node.id)).all()
+    owners = {u.id: u for u in session.scalars(select(User)).all()}
+    badges = relics_for([(n.id, n.claimed_at, n.scenario_count) for n in nodes], datetime.now(timezone.utc))
+    per_region: dict[str, dict[str, object]] = {r: {"region": r, "claimed": 0, "scenarios": 0} for r in REGIONS}
+    for n in nodes:
+        row = per_region[region_for(n.id)]
+        row["claimed"] += 1 if n.owner_id is not None else 0
+        row["scenarios"] += n.scenario_count
+    top = sorted((n for n in nodes if n.owner_id is not None and n.scenario_count > 0), key=lambda n: (-n.scenario_count, n.id))[:5]
+    mood = [
+        {"id": t.id, "curiosity": t.curiosity, "intensity": t.intensity, "warmth": t.warmth}
+        for t in reversed(load_thoughts(session, limit=60))
+    ]
+    writers = {w: c for w, c in session.execute(select(Output.writer, func.count()).group_by(Output.writer)).all()}
+    total = sum(writers.values())
+    first = session.scalar(select(func.min(Output.created_at)))
+    days = 0
+    if first is not None:
+        stamp = first if first.tzinfo else first.replace(tzinfo=timezone.utc)
+        days = (datetime.now(timezone.utc) - stamp).days
+    memory = ensure_world(session)
+    return {
+        "thoughts": total,
+        "cycle": memory.cycle,
+        "scenarios": sum(n.scenario_count for n in nodes),
+        "claimed": sum(1 for n in nodes if n.owner_id is not None),
+        "days_alive": days,
+        "model_share": round(100 * writers.get("model", 0) / total) if total else 0,
+        "regions": list(per_region.values()),
+        "top": [
+            {
+                "node_id": n.id,
+                "scenarios": n.scenario_count,
+                "alias": owners[n.owner_id].alias if n.owner_id in owners else None,
+                "relics": badges.get(n.id, []),
+            }
+            for n in top
+        ],
+        "mood": mood,
+    }
 
 
 @app.get("/api/verify")

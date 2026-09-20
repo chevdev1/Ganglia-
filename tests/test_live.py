@@ -70,3 +70,18 @@ def test_share_pages_and_cards(client):
         r = client.get(url)
         assert r.status_code == 200 and r.headers["content-type"] == "image/png" and r.content[:8] == b"\x89PNG\r\n\x1a\n"
     assert client.get("/n/200").status_code == 404
+
+
+def test_pulse_numbers_and_static_revalidation(client):
+    h = _login(client)
+    _speak(client, h, node=20)
+    _speak_more = client.post("/api/scenarios", headers=h, json={"text": "A second memory, quiet and small."})
+    p = client.get("/api/pulse").json()
+    assert p["claimed"] == 1 and p["scenarios"] >= 1 and p["thoughts"] >= 1
+    assert [r["region"] for r in p["regions"]][:2] == ["frontal", "parietal"] and len(p["regions"]) == 8
+    assert p["regions"][1]["claimed"] == 1  # node 20 is parietal
+    assert p["top"][0]["node_id"] == 20 and 0 <= p["model_share"] <= 100
+    assert all({"curiosity", "intensity", "warmth"} <= set(m) for m in p["mood"])
+    for path in ("/", "/docs.html", "/js/app.js", "/css/styles.css"):
+        assert client.get(path).headers["cache-control"] == "no-cache"
+    assert "cache-control" not in client.get("/api/health").headers or client.get("/api/health").headers["cache-control"] != "no-cache"

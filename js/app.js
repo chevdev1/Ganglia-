@@ -720,7 +720,7 @@ function startStream(){
       presentNodes=new Set(d.present||[]);
       paintWatching(d.watching);
       grid.querySelectorAll('.cell').forEach((c,i)=>c.classList.toggle('present', presentNodes.has(i)));
-      if(d.last_id>lastThoughtId) loadState(true).catch(()=>{});
+      if(d.last_id>lastThoughtId){ loadState(true).catch(()=>{}); if(Date.now()-pulseAt>10000) loadPulse(); }
     }catch(_e){}
   };
 }
@@ -793,3 +793,38 @@ function closeHistory(){ clearInterval(histTimer); histTimer=null; $h('histPlay'
   };
   function closeHistoryPlay(){ clearInterval(histTimer); histTimer=null; $h('histPlay').textContent='Play'; }
 })();
+
+
+/* ---------- the pulse (live analytics from /api/pulse) ---------- */
+const escHtml=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+let pulseAt=0;
+function stepPath(series,key,W,H,m){
+  if(series.length<2) return '';
+  const dx=(W-2*m)/(series.length-1);
+  return series.map((p,i)=>{
+    const x=(m+i*dx).toFixed(1), y=(H-m-(p[key]/10)*(H-2*m)).toFixed(1);
+    return i?`H${x}V${y}`:`M${x} ${y}`;
+  }).join('');
+}
+function renderPulse(d){
+  const stats=[[d.thoughts,'thoughts written'],[d.scenarios,'scenarios sent'],[d.claimed+'/128','seats claimed'],[d.days_alive,'days alive'],[d.model_share+'%','written by the model']];
+  $h('pulseStats').innerHTML=stats.map(([v,l])=>`<div class="stat"><strong>${escHtml(v)}</strong><span>${l}</span></div>`).join('');
+  const W=560,H=150,m=12;
+  $h('pulseMood').innerHTML= d.mood.length<2
+    ? '<p class="wallet-tip">Not enough thoughts yet.</p>'
+    : `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Curiosity, intensity and warmth over the last thoughts"><path class="p-l p-w" d="${stepPath(d.mood,'warmth',W,H,m)}"/><path class="p-l p-i" d="${stepPath(d.mood,'intensity',W,H,m)}"/><path class="p-l p-c" d="${stepPath(d.mood,'curiosity',W,H,m)}"/></svg>`;
+  const max=Math.max(1,...d.regions.map(r=>r.scenarios));
+  $h('pulseRegions').innerHTML=d.regions.map(r=>{
+    const on=Math.round(r.scenarios/max*20);
+    return `<div class="rrow"><span>${escHtml(r.region)}</span><div class="meter">${Array.from({length:20},(_,k)=>`<b class="${k<on?'on':''}"></b>`).join('')}</div><em>${r.scenarios} scenarios, ${r.claimed}/16 seats</em></div>`;
+  }).join('');
+  $h('pulseTop').innerHTML= d.top.length
+    ? d.top.map(t=>`<li><a href="#node-${String(t.node_id).padStart(3,'0')}">${pad(t.node_id)}</a>${t.alias?`<b>${escHtml(t.alias)}</b>`:''}${t.relics.map(r=>`<span class="tag">${escHtml(RELIC_LABEL[r]||r)}</span>`).join('')}<span>${t.scenarios} scenarios</span></li>`).join('')
+    : '<li>No scenarios yet. The first voice is still free.</li>';
+}
+async function loadPulse(){
+  pulseAt=Date.now();
+  try{ renderPulse(await api('/api/pulse')); }catch(_e){}
+}
+setTimeout(loadPulse, 1200);
+setInterval(loadPulse, 30000);

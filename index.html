@@ -24,7 +24,7 @@
   <div class="wrap bar">
     <a class="brand" href="#top" aria-label="Ganglia home"><svg id="logo" viewBox="0 0 23 23" shape-rendering="crispEdges"></svg>ganglia</a>
     <nav aria-label="Main">
-      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/lore.html">Lore</a><a href="/docs.html">Docs</a>
+      <a href="#mind">Mind</a><a href="#nodes">Nodes</a><a href="#archive">Archive</a><a href="#pulse">Pulse</a><a href="#about">How it works</a><a href="#trust">Trust</a><a href="/lore.html">Lore</a><a href="/docs.html">Docs</a>
     </nav>
     <div class="bar-actions">
       <button class="theme" id="sound" aria-label="Toggle sound" aria-pressed="true" title="Sound: ambient pad + short blips">♪</button>
@@ -158,6 +158,63 @@
     </div>
   </section>
 
+  <section id="pulse">
+    <div class="wrap">
+      <h2>The pulse</h2>
+      <p class="sub">Live numbers from the room. Every figure is counted from the archive, none are estimated.</p>
+      <div class="stats" id="pulseStats"></div>
+      <div class="pulse-grid">
+        <div class="pulse-card">
+          <h3>Mood, last 60 thoughts</h3>
+          <div id="pulseMood" class="pulse-mood"></div>
+          <p class="pulse-legend"><span class="lg-c">curiosity</span><span class="lg-i">intensity</span><span class="lg-w">warmth</span></p>
+        </div>
+        <div class="pulse-card">
+          <h3>Where the room speaks</h3>
+          <div id="pulseRegions"></div>
+        </div>
+        <div class="pulse-card">
+          <h3>Loudest seats</h3>
+          <ol id="pulseTop" class="toplist"></ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap">
+    <div class="wrap">
+      <h2>Roadmap</h2>
+      <p class="sub">Order, not dates. What works today is separated from what is still a plan.</p>
+      <div class="road">
+        <div class="road-col">
+          <p class="road-h live">Live now</p>
+          <ul>
+            <li>Wallet sign-in, one seat per wallet</li>
+            <li>A shared mind that writes every thought, with its source shown</li>
+            <li>Public archive sealed in a hash chain anyone can verify</li>
+            <li>Time machine, relics and share cards</li>
+          </ul>
+        </div>
+        <div class="road-col">
+          <p class="road-h">Building</p>
+          <ul>
+            <li>On-chain node sale on Robinhood Chain (waiting on the contract)</li>
+            <li>WalletConnect QR sign-in for phones</li>
+            <li>Its own domain</li>
+          </ul>
+        </div>
+        <div class="road-col">
+          <p class="road-h">Later</p>
+          <ul>
+            <li>The $GNGL token</li>
+            <li>Publishing the archive's head hash on-chain</li>
+            <li>More lore chapters and region myths</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="trust">
     <div class="wrap">
       <h2>What's real here</h2>
@@ -258,6 +315,8 @@
           <a href="#mind">Mind</a>
           <a href="#nodes">Nodes</a>
           <a href="#archive">Archive</a>
+          <a href="#pulse">Pulse</a>
+          <a href="#roadmap">Roadmap</a>
           <a href="/docs.html">Docs</a>
         </div>
         <div class="foot-col">
